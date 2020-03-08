@@ -11,6 +11,7 @@ bool floatCmp(float a, float b) {
 }
 
 SocketRobot::SocketRobot() {
+    motionFinished = true;
     NACHI_COMMIF_INFO Info;
     ZeroMemory(&Info, sizeof(Info));
     char tmp[] = "192.168.1.2";
@@ -18,6 +19,11 @@ SocketRobot::SocketRobot() {
     Info.lKind = NR_DATA_XML;
     nXmlOpenId = NR_Open(&Info);
     printf("Robot connection: %d\n", nXmlOpenId);
+}
+
+void SocketRobot::doMove(float* coords) {
+    thread t1(&SocketRobot::moveRobotToAndFro, this, coords);
+    t1.detach();
 }
 
 void SocketRobot::moveRobotMid(float* coords) {
@@ -59,14 +65,17 @@ void SocketRobot::moveRobotTo(float* coords, bool startOrEnd) {
     }
     waitForRobot(coords);
 
+    mu.lock();
+    if (!startOrEnd) motionFinished = true;
+    mu.unlock();
     vaccum(startOrEnd);
 
-    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAbove, 0, 1, 0) != NR_E_NORMAL) {
+    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAbove, 1, 1, 0) != NR_E_NORMAL) {
         printf("NR_CtrlMoveX error : %d\n", nErr);
         return;
     }
-    /*float tmp[] = { coords[0], coords[1], coords[2] + 250.0f, coords[3], coords[4], coords[5] };
-    waitForRobot(tmp);*/
+    float tmp[] = { coords[0], coords[1], coords[2] + 250.0f, coords[3], coords[4], coords[5] };
+    waitForRobot(tmp);
 }
 
 void SocketRobot::waitForRobot(float* coords) {
@@ -87,7 +96,6 @@ void SocketRobot::waitForRobot(float* coords) {
         }
         Sleep(50);
     }
-    //Sleep(100);
 }
 
 void SocketRobot::vaccum(bool startOrEnd) {

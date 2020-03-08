@@ -47,7 +47,8 @@ int main()
 	int cnt = 0;
 	while (true)
 	{
-
+		if (!sr->getMotionFinished()) continue;
+		cout << "starting new cycle" << endl;
 		//得到原始的各图片，并且不用相机内置的参数校正图片
 		kinect.GetOpenCVImage(colorMatOld, depthMatOld, depthcolorMatOld, irMat, FALSE);
 
@@ -93,14 +94,14 @@ int main()
 		cv::Mat eigenvectors = (cv::Mat_<double>(3, 3)<< x_axis[0], y_axis[0], z_axis[0],
 			x_axis[1], y_axis[1], z_axis[1], 
 			x_axis[2], y_axis[2], z_axis[2]);
-		cout << x_axis[0] << " " << x_axis[1] << " " << x_axis[2] << endl;
-		cout << eigenvectors << endl;
+		//cout << x_axis[0] << " " << x_axis[1] << " " << x_axis[2] << endl;
+		//cout << eigenvectors << endl;
 
-		cout << centerMat << endl;
+		//cout << centerMat << endl;
 		cv::Mat express2depthHomo = rob.RT2HomogeneousMatrix(eigenvectors, centerMat);
-		cout << rob.depth_Homo_cam2base << " " << express2depthHomo << endl;
+		//cout << rob.depth_Homo_cam2base << " " << express2depthHomo << endl;
 		cv::Mat express2roboticHomo = rob.depth_Homo_cam2base * express2depthHomo;
-		cout << express2roboticHomo << endl;
+		//cout << express2roboticHomo << endl;
 		cv::Mat express2roboticRotation, express2roboticTranslation;
 		rob.HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
 		if (express2roboticRotation.at<double>(0, 0) < 0)
@@ -193,8 +194,10 @@ int main()
 		coords[11] = 0;
 
 		kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
-		if (useRobot)
-			sr->moveRobotToAndFro(coords);
+		if (useRobot) {
+			sr->setMotionFinished(false);
+			sr->doMove(coords);
+		}
 	}
 	return 0;
 }
