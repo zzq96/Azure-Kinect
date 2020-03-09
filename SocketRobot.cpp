@@ -26,9 +26,9 @@ void SocketRobot::doMove(float* coords) {
     t1.detach();
 }
 
-void SocketRobot::moveRobotMid(float* coords) {
+void SocketRobot::moveRobotMid(float* coords, int type) {
     NR_POSE Pose = { coords[0], coords[1], coords[2], coords[3], coords[4], coords[5] };
-    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &Pose, 0, 1, 0) != NR_E_NORMAL) {
+    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &Pose, type, 1, 0) != NR_E_NORMAL) {
         printf("NR_CtrlMoveX error : %d\n", nErr);
         return;
     }
@@ -45,10 +45,10 @@ void SocketRobot::moveRobotToAndFro(float* coords) {
     }
 
     float mid[] = { 424.354f, 245.013f, 531.977f, 30.0f, 0.0f, 0.0f };
-    moveRobotMid(mid);
     moveRobotTo(coords, START_VACCUM);
-    moveRobotMid(mid);   
+    moveRobotMid(mid, 0);   
     moveRobotTo(coords + 6, END_VACCUM);
+    moveRobotMid(mid, 1);
     printf("Current task finished.\n");
 }
 
@@ -70,12 +70,14 @@ void SocketRobot::moveRobotTo(float* coords, bool startOrEnd) {
     mu.unlock();
     vaccum(startOrEnd);
 
-    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAbove, 1, 1, 0) != NR_E_NORMAL) {
-        printf("NR_CtrlMoveX error : %d\n", nErr);
-        return;
-    }
-    float tmp[] = { coords[0], coords[1], coords[2] + 250.0f, coords[3], coords[4], coords[5] };
-    waitForRobot(tmp);
+    if (startOrEnd) {
+        if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAbove, 1, 1, 0) != NR_E_NORMAL) {
+            printf("NR_CtrlMoveX error : %d\n", nErr);
+            return;
+        }
+        float tmp[] = { coords[0], coords[1], coords[2] + 250.0f, coords[3], coords[4], coords[5] };
+        waitForRobot(tmp);
+    }    
 }
 
 void SocketRobot::waitForRobot(float* coords) {

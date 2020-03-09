@@ -16,7 +16,7 @@ public:
 	void doMove(float* coords);
 	void setMotionFinished(bool finished) { motionFinished = finished; }
 	bool getMotionFinished() { return motionFinished; }
-	void moveRobotMid(float* coords);
+	void moveRobotMid(float* coords, int type);
 	void moveRobotToAndFro(float* coords);
 	void moveRobotTo(float* coords, bool startOrEnd);
 	void waitForRobot(float* coords);
