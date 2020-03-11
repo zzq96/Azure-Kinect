@@ -276,9 +276,11 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		&depthImage);
 
 
+	static k4a_transformation_t transformation = NULL;
 	if (isDepth2Color == true)
 	{
-		k4a_transformation_t transformation = k4a_transformation_create(&calibration);
+		if(transformation == NULL)
+			transformation = k4a_transformation_create(&calibration);
 		if (K4A_RESULT_SUCCEEDED == k4a_transformation_depth_image_to_color_camera(transformation, depthImageOld, depthImage))
 		{
 			//	printf(" | Depth16 res:%4dx%4d stride:%5d\n",

@@ -1,19 +1,22 @@
 #include "plane_detection.h"
+#include "Robot.h"
 #include <stdint.h>
 #include <iomanip> // output double value precision
-cv::Mat depth_Homo_cam2base	 =(cv::Mat_<double>(4,4)<<2.1717400918944269e-02, 9.9163976363198392e-01, 1.2719643737632352e-01,
-    2.9420400367679542e+02, 9.9974014635825281e-01,
-    -2.2422007434261534e-02, 4.1101511160483439e-03,
-    3.5015016682124605e+02, 6.9277887456734161e-03,
-	1.2707412311922936e-01, -9.9186903015296057e-01,
-	1.3214478208789160e+03, 0., 0., 0. ,1.);
 
-cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, double*& center, 
-	double*& x_axis, double*& y_axis, double*& z_axis, vector<VertexType>& highestPlanePoints, cv::Point2f* vertices) {
-	int start_x = 240;
-	int start_y = 0;
-	int roi_width = 280;
-	int roi_height = 360;
+extern Robot rob;
+
+void copyVec3(double* vec0, double* vec1) {
+	vec0[0] = vec1[0];
+	vec0[1] = vec1[1];
+	vec0[2] = vec1[2];
+}
+
+cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, double* center, 
+	double* x_axis, double* y_axis, double* z_axis, vector<VertexType>& highestPlanePoints, cv::Point2f* vertices) {
+	int start_x = 200;
+	int start_y = 40;
+	int roi_width = 215;
+	int roi_height = 290;
 	cv::Rect roi = cv::Rect(start_x, start_y, roi_width, roi_height);
 	cv::Mat mask = cv::Mat::zeros(kDepthHeight, kDepthWidth, CV_8UC1);
 	mask(roi).setTo(255);
@@ -23,7 +26,7 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, d
 	int size = masks.size();
 	PlaneDetection* plane_detections = new PlaneDetection[size];
 	int highest_index = -1, highest_index_index = -1, topRect = -1, k = 0;
-	double highestPlaneHeight = std::numeric_limits<double>::min();
+	double highestPlaneHeight = -1;
 	std::vector<cv::RotatedRect> boundingRects;
 	cv::Mat point3d;
 	for (int i = 0; i < size; ++i) {
@@ -37,7 +40,8 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, d
 				plane_detections[i].plane_filter.extractedPlanes[j]->center[1],
 				plane_detections[i].plane_filter.extractedPlanes[j]->center[2],1);
 			//将深度相机坐标系下的坐标转化为机械臂坐标系
-			point3d = depth_Homo_cam2base * point3d;
+			point3d = rob.depth_Homo_cam2base * point3d;
+
 			//选出最高的快递
 			if (point3d.at<double>(2, 0) > highestPlaneHeight) {
 				highestPlaneHeight = point3d.at<double>(2, 0);
@@ -49,10 +53,10 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, d
 	}
 	
 	if (highest_index != -1) {
-		center = plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->center;
-		x_axis = plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->x_axis;
-		y_axis = plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->y_axis;
-		z_axis = plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->z_axis;
+		copyVec3(center, plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->center);
+		copyVec3(x_axis, plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->x_axis);
+		copyVec3(y_axis, plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->y_axis);
+		copyVec3(z_axis, plane_detections[highest_index].plane_filter.extractedPlanes[highest_index_index]->z_axis);
 
 		double x = -1, y = -1, z = -1;
 		for (int i = 0; i < colorSrc.rows; ++i) {
@@ -77,6 +81,11 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, d
 			line(colorSrc, vertices[j], vertices[(j + 1) % 4], cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
 		}
 	}
+	else {
+		center = new double[3];
+	}
+
+	delete[] plane_detections;
 
 	return colorSrc;
 }

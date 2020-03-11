@@ -1,18 +1,19 @@
 #include <winsock2.h>
 #include <vector>
 #include <stdio.h>
-#include<string>
+#include <string>
 #include <stdlib.h>
 #include <iostream>
 #include <k4a/k4a.h>
 #include "k4a_grabber.h"
 #include "plane_detection.h"
-#include<ctime>
+#include <ctime>
 #include <fstream>
-#include"SocketRobot.h"
+#include "SocketRobot.h"
 #include "flask.h"
 #include "Robot.h"
 #include <OpenNR-IF.h>
+#include "vzense.h"
 
 //test no ff
 
@@ -41,6 +42,8 @@ int main()
 #endif // ROBOT
 
 	SocketRobot* sr = NULL;
+	Vzense* heightEstimator = new Vzense();
+	//heightEstimator->frameLoop();
 	if (useRobot)
 		sr = new SocketRobot();
 
@@ -48,7 +51,7 @@ int main()
 	int cnt = 0;
 	while (true)
 	{
-		if (!sr->getMotionFinished()) continue;
+		if (useRobot && !sr->getMotionFinished()) continue;
 		cout << "starting new cycle" << endl;
 		//得到原始的各图片，并且不用相机内置的参数校正图片
 		kinect.GetOpenCVImage(colorMatOld, depthMatOld, depthcolorMatOld, irMat, FALSE);
@@ -63,7 +66,7 @@ int main()
 		kinect.ConvertColor2Depth(colorMat, depthMat, colorMatRevise);
 
 		//下面是得到快递的程序
-		double* center;
+		double center[3];
 		vector<VertexType> highestPlanePoints_3D;
 		cv::Point2f vertices[4];
 		vector<cv::Mat> masks;
@@ -76,7 +79,7 @@ int main()
 
 		cout << "有" << masks.size() << "个快递" << endl;
 
-		double* x_axis, * y_axis, * z_axis;
+		double x_axis[3], y_axis[3], z_axis[3];
 		colorMatRevise = processImg(colorMatRevise, depthMat, masks, center, x_axis, y_axis, z_axis, highestPlanePoints_3D, vertices);
 
 		//保存图片，用于出问题debug
@@ -166,28 +169,29 @@ int main()
 		//cout << "欧拉角:" << endl;
 		//cout << eulerAngles << endl;
 
-		float coords[12];
+		double coords[12];
 		cout << express2roboticTranslation.at<double>(0, 0) << endl;
 		cout << express2roboticTranslation.at<double>(1, 0) << endl;
 		cout << express2roboticTranslation.at<double>(2, 0) << endl;
 		coords[0] = express2roboticTranslation.at<double>(0, 0);
 		coords[1] = express2roboticTranslation.at<double>(1, 0);
-		coords[2] = express2roboticTranslation.at<double>(2, 0) - 4;
+		coords[2] = express2roboticTranslation.at<double>(2, 0) - 5;
 		coords[3] = eulerAngles[0];
 		coords[4] = eulerAngles[1];
 		coords[5] = eulerAngles[2];
-		coords[6] = 698 + 50;
+		//212.183 - 392.084
+		coords[6] = 220;
 		//放成一排
-		coords[7] = 342 - 750 + cnt * 210;
+		//coords[7] = 342 - 750 + cnt * 210;
 		//放到固定位置
-		//coords[7] = 0;
+		coords[7] = -400;
 		//快递计数
 		cnt++;
 		//放置的高度
 		if (coords[2] > 160)
-			coords[8] = 160 - 30;
+			coords[8] = 160;
 		else
-			coords[8] = coords[2] - 30;
+			coords[8] = coords[2];
 
 		//平着放
 		coords[9] = 0;
@@ -196,9 +200,13 @@ int main()
 
 		kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
 		if (useRobot) {
+			double start[] = { coords[0], coords[1], coords[2] + 200 };
+			double goal[] = { coords[6], coords[7], coords[8] + 100 };
+			//sr->runPlanner(depthMat, start, goal, 2, rob.depth_Homo_cam2base);
 			sr->setMotionFinished(false);
-			sr->doMove(coords);
+			sr->doMove(coords, heightEstimator);
 		}
+
 	}
 	return 0;
 }

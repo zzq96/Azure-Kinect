@@ -32,8 +32,8 @@ const int kDepthHeight = 576;
 #define _isnan(x) isnan(x)
 #endif
 
-cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, double*& center,
-	double*& x_axis, double*& y_axis, double*& z_axis, vector<VertexType>& highestPlanePoints, cv::Point2f* vertices);
+cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, double* center,
+	double* x_axis, double* y_axis, double* z_axis, vector<VertexType>& highestPlanePoints, cv::Point2f* vertices);
 
 cv::RotatedRect getBoundingRect(cv::Mat src);
 
