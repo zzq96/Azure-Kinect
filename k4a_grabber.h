@@ -1,10 +1,6 @@
 #pragma once
 #include <k4a/k4a.hpp>
 
-#include <pcl/io/boost.h>
-#include <pcl/io/grabber.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui_c.h>
 
@@ -30,7 +26,6 @@ public:
 	void GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color);
 	void GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation, cv::Mat& Depth2ColorTranslation);
 	void ShowOpenCVImage(cv::Mat Img, std::string name, int waitkey);
-	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
 
 	//得到Mat格式的相机内参
 	//cameraType是"depth"or"color"
@@ -45,7 +40,6 @@ public:
 	//TODO(zzq):相机坐标系下的xyz值
 	//得到相机坐标系下的xyz值
 	//输入图像上的像素坐标，输出相机坐标系下的xyz值
-	void GetXYZAtCameraView(const cv::Point2i point2D, float depth, cv::Point3f &point3D);
 	//用完相机后，将相机资源释放。
 	void ReleaseDevice();
 

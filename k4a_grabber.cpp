@@ -1,4 +1,3 @@
-#include <Eigen/Dense>
 
 #include<assert.h>
 #include "k4a_grabber.h"
@@ -220,7 +219,7 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		&depthImage);
 
 
-	if (isDepth2Color == TRUE)
+	if (isDepth2Color == true)
 	{
 		k4a_transformation_t transformation = k4a_transformation_create(&calibration);
 		if (K4A_RESULT_SUCCEEDED == k4a_transformation_depth_image_to_color_camera(transformation, depthImageOld, depthImage))
@@ -401,131 +400,4 @@ void k4a::KinectAPI::ColorizeDepthImage(const k4a_image_t& depthImage,
 			const size_t currentPixel = static_cast<size_t>(h * width + w);
 			(*buffer)[currentPixel] = (this->*visualizationFn)(depthData[currentPixel], expectedValueRange.first, expectedValueRange.second);
 		}
-}
-void k4a::KinectAPI::GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr& cloud)
-{
-		k4a_capture_t capture ;
-		switch (k4a_device_get_capture(device, &capture, 10000))
-		{
-			case K4A_WAIT_RESULT_SUCCEEDED:
-				printf("get capture success\n");
-				break;
-			case K4A_WAIT_RESULT_TIMEOUT:
-				throw "Timed out waiting for a capture";
-			case K4A_WAIT_RESULT_FAILED:
-				throw "Failed to read a capture";
-		}
-
-		k4a_image_t colorImage = k4a_capture_get_color_image(capture);
-		k4a_image_t depthImage= k4a_capture_get_depth_image(capture);
-
-		int color_image_width_pixels = k4a_image_get_width_pixels(colorImage);
-		int color_image_height_pixels = k4a_image_get_height_pixels(colorImage);
-
-		k4a_image_t transformed_depth_image= NULL;
-		k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
-			color_image_width_pixels,
-			color_image_height_pixels,
-			color_image_width_pixels * (int)sizeof(uint16_t),
-			&transformed_depth_image);
-
-		k4a_image_t point_cloud_image= NULL;
-		k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
-			color_image_width_pixels,
-			color_image_height_pixels,
-			color_image_width_pixels * 3 * (int)sizeof(uint16_t),
-			&point_cloud_image);
-
-		k4a_calibration_t calibration;
-		if (K4A_RESULT_SUCCEEDED !=
-			k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration))
-		{
-			throw ("Failed to get calibration\n");
-		}
-
-		k4a_transformation_t transformation = k4a_transformation_create(&calibration);
-
-		k4a_transformation_depth_image_to_color_camera(transformation, depthImage, transformed_depth_image);
-		k4a_transformation_depth_image_to_point_cloud(transformation, transformed_depth_image, K4A_CALIBRATION_TYPE_COLOR, point_cloud_image);
-
-		int width =k4a_image_get_width_pixels(colorImage);
-		int height =	k4a_image_get_height_pixels(colorImage);
-
-		cloud->width = width;
-		cloud->height = height;
-		cloud->is_dense = false;
-		cloud->points.resize(cloud->height * cloud->width);
-
-	//uint8_t* colorData = k4a_image_get_buffer(colorImage);
-		int16_t* point_cloud_image_data = (int16_t*)(void*)k4a_image_get_buffer(point_cloud_image);
-		uint8_t *color_image_data = k4a_image_get_buffer(colorImage);
-
-	#ifdef VTK_VISUALIZATION
-		Eigen::Matrix3f mZ,mY;
-		mZ = Eigen::AngleAxisf(-M_PI, Eigen::Vector3f::UnitZ());
-		mY = Eigen::AngleAxisf(-M_PI, Eigen::Vector3f::UnitY());
-	#endif
-
-		for (int i = 0; i < width * height; ++i)
-		{
-			pcl::PointXYZRGBA point;
-
-			point.x = point_cloud_image_data[3 * i + 0] / 1000.0f;
-			point.y = point_cloud_image_data[3 * i + 1] / 1000.0f;
-			point.z = point_cloud_image_data[3 * i + 2] / 1000.0f;
-			//printf("%f ", point.z);
-
-			if (point.z == 0)
-			{
-				continue;
-			}
-
-	#ifdef VTK_VISUALIZATION
-			point.getVector3fMap() = mZ * point.getVector3fMap();
-			point.getVector3fMap() = mY * point.getVector3fMap();
-	#endif
-
-			point.b = color_image_data[4 * i + 0];
-			point.g = color_image_data[4 * i + 1];
-			point.r = color_image_data[4 * i + 2];
-			point.a = color_image_data[4 * i + 3];
-
-			if (point.b == 0 && point.g == 0 && point.r == 0 && point.a == 0)
-			{
-				continue;
-			}
-
-			cloud->points[i] = point;
-		}
-		k4a_image_release(point_cloud_image);
-		k4a_image_release(transformed_depth_image);
-		k4a_image_release(depthImage);
-		k4a_image_release(colorImage);
-		//k4a_image_release(irImage);
-		k4a_capture_release(capture);
-}
-void k4a::KinectAPI::GetXYZAtCameraView(const cv::Point2i point2D, float depth, cv::Point3f& point3D)
-{
-	//OpenCV类型的变量转化为kinect形式
-	k4a_float2_t point2d;
-	point2d.v[0] = point2D.x;
-	point2d.v[1] = point2D.y;
-	point2d.xy.x = point2D.x;
-	point2d.xy.y = point2D.y;
-
-	k4a_float3_t point3d;
-
-	int valid = 0;
-	//第一个K4A_CALIBRATION_TYPE_COLOR值输入的2D坐标是哪个相机图像的。第二个是指要转化到哪个相机视角下的3D坐标
-	k4a_result_t result = k4a_calibration_2d_to_3d(
-		&calibration, &point2d, depth, K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_COLOR, &point3d, &valid);
-	if (K4A_RESULT_SUCCEEDED != result)
-	{
-		throw error("Calibration contained invalid transformation parameters!");
-	}
-
-	//将3D坐标从kinect格式转化为OpenCV格式
-	point3D.x = point3d.xyz.x;
-	point3D.y = point3d.xyz.y;
-	point3D.z = point3d.xyz.z;
 }
