@@ -178,16 +178,16 @@ int main()
 		coords[5] = eulerAngles[2];
 		coords[6] = 698 + 50;
 		//放成一排
-		coords[7] = 342 - 750 + cnt * 210;
+		//coords[7] = 342 - 750 + cnt * 210;
 		//放到固定位置
-		//coords[7] = 0;
+		coords[7] = 0;
 		//快递计数
 		cnt++;
 		//放置的高度
 		if (coords[2] > 160)
-			coords[8] = 160 - 30;
+			coords[8] = 160 - 30 - 50;
 		else
-			coords[8] = coords[2] - 30;
+			coords[8] = coords[2] - 30 - 50;
 
 		//平着放
 		coords[9] = 0;
