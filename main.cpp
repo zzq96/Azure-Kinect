@@ -15,10 +15,17 @@
 
 int main()
 {
-	//k4a::KinectAPI kinect;
-	std::string name = "imgs/img0";
-	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
-	cv::Mat img_color = cv::imread(name+"_color.png");
+	k4a::KinectAPI kinect;
+	//cv::Mat depthMat, colorMat, depthcolorMat;
+	//kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat);
+	//kinect.ShowOpenCVImage(colorMat, "color");
+	//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+	cv::Mat intriParam;
+	kinect.GetIntrinsicParam(intriParam);
+	
+	//std::string name = "imgs/img0";
+	//cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
+	//cv::Mat img_color = cv::imread(name+"_color.png");
 	//kinect.ShowOpenCVImage(img_color, name);
 	//cv::imshow(name, img_color);
 	//cv::waitKey(0);

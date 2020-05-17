@@ -8,6 +8,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui_c.h>
 
+//TODO: change namespace from k4a to robot
 namespace k4a {
 
 struct Pixel {
@@ -44,6 +45,7 @@ public:
 	void ReleaseDevice();
 
 private:
+	k4a_calibration_t calibration;
 	// TODO(zzq):确定配置文件格式，写读配置的函数
 	void ReadConfig(std::string dir);
 	//相机数量

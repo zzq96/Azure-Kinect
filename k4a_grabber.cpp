@@ -1,6 +1,7 @@
 #include <Eigen/Dense>
 
 #include "k4a_grabber.h"
+using namespace std;
 
 k4a::KinectAPI::KinectAPI()
 {
@@ -26,6 +27,26 @@ k4a::KinectAPI::KinectAPI()
         k4a_device_close(device);
 		throw "Failed to start cameras!\n";
     }
+	if (K4A_RESULT_SUCCEEDED !=
+		k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration))
+	{
+		throw ("Failed to get calibration\n");
+	}
+}
+//得到Opencv格式的相机内参
+void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& intrisicParam)
+{
+	k4a_calibration_camera_t depthCameraCalibration = calibration.depth_camera_calibration;
+	k4a_calibration_camera_t colorCameraCalibration = calibration.color_camera_calibration;
+	//kinect相机应该有4个传感器，下面的外参是4*4的一个矩阵，其中下标[i][j]应该是第i的传感器到第j个传感器的转化矩阵
+	//[0][1]应该是depth到color的矩阵，但是没测试过，以后用到在测试。
+	k4a_calibration_extrinsics_t extrinsics = calibration.extrinsics[0][0];
+	//下面代码，当[0][0]时，输出分别为【1,0,0】和【0，0,0】就是本身到本身的转化矩阵
+	//cout << extrinsics.rotation[0] << " " << extrinsics.rotation[1] << " " << extrinsics.rotation[2] << endl;
+	//cout << extrinsics.translation[0] << " " << extrinsics.translation[1] << " " << extrinsics.translation[2] << endl;
+
+
+
 }
 void k4a::KinectAPI::ReleaseDevice() 
 {
@@ -45,6 +66,7 @@ void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name)
 void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat)
 {
 	k4a_capture_t capture ;
+	//TODO(zzq):这个capture是每调用一次捕捉一帧，还是之后可以一直通过get_color_image调用？
 	switch (k4a_device_get_capture(device, &capture, 10000))
 	{
 		case K4A_WAIT_RESULT_SUCCEEDED:
@@ -68,12 +90,6 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		color_width * (int)sizeof(uint16_t),
 		&depthImage);
 
-	k4a_calibration_t calibration;
-	if (K4A_RESULT_SUCCEEDED !=
-		k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration))
-	{
-		throw ("Failed to get calibration\n");
-	}
 
 	k4a_transformation_t transformation = k4a_transformation_create(&calibration);
 
