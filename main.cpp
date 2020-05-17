@@ -38,9 +38,9 @@ int main()
 			kinect.ShowOpenCVImage(colorMat, "color");
 			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 			std::string name = "imgs/img" + std::to_string(i);
-			cv::imwrite(name+"_depth.png", depthMat);
-			cv::imwrite(name+"_depthcolor.png", depthcolorMat);
-			cv::imwrite(name+"_color.png", colorMat);
+		//	cv::imwrite(name+"_depth.png", depthMat);
+		//	cv::imwrite(name+"_depthcolor.png", depthcolorMat);
+		//	cv::imwrite(name+"_color.png", colorMat);
 
 			cv::Mat img = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
 			cout << "after read:" << endl;
