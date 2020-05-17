@@ -4,7 +4,7 @@ TIME:2019-05-17
 
 
 */
-#include "stdafx.h"
+//#include "stdafx.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>

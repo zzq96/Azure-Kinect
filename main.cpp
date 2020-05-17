@@ -13,8 +13,22 @@
 #include "k4a_grabber.h"
 #include<ctime>
 
-
 int main()
+{
+	//k4a::KinectAPI kinect;
+	std::string name = "imgs/img0";
+	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
+	cv::Mat img_color = cv::imread(name+"_color.png");
+	//kinect.ShowOpenCVImage(img_color, name);
+	//cv::imshow(name, img_color);
+	//cv::waitKey(0);
+
+
+	return 0;
+}
+
+
+int main1()
 {
 	
 	try {

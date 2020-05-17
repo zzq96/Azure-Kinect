@@ -24,21 +24,12 @@
     <ClCompile Include="k4a_grabber.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Function_SHUJING.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Function_ZZQ.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="k4a_grabber.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Function_SHUJING.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Function_ZZQ.h">
+    <ClInclude Include="stdafx.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
