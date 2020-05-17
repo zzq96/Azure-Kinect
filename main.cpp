@@ -19,9 +19,13 @@ int main()
 	//cv::Mat depthMat, colorMat, depthcolorMat;
 	//kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat);
 	//kinect.ShowOpenCVImage(colorMat, "color");
-	//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-	cv::Mat intriParam;
-	kinect.GetIntrinsicParam(intriParam);
+	//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor")
+	cv::Mat depthCameraMatrix, depthDisCoeffs;
+	kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
+	cout << "depth intriParam:";
+	for (int i = 0; i < 5; i++)
+		cout << depthDisCoeffs.at<float>(i) << " ";
+	cout << endl;
 	
 	//std::string name = "imgs/img0";
 	//cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);

@@ -32,7 +32,7 @@ public:
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
 	//TODO(zzq)::获取相机内参
 	//得到Opencv格式的相机内参
-	void GetIntrinsicParam(cv::Mat &intrisicParam);
+	void GetIntrinsicParam(cv::Mat& cameraMatrix, cv::Mat& disCoeffs, const std::string cameraType);
 	//TODO(zzq):目标坐标系下的XYZ值
 	//得到目标坐标系下的xyz值
 	//输入图像上的像素坐标，输出目标坐标系下的xyz值

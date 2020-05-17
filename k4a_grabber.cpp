@@ -1,5 +1,6 @@
 #include <Eigen/Dense>
 
+#include<assert.h>
 #include "k4a_grabber.h"
 using namespace std;
 
@@ -33,11 +34,16 @@ k4a::KinectAPI::KinectAPI()
 		throw ("Failed to get calibration\n");
 	}
 }
-//得到Opencv格式的相机内参
-void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& intrisicParam)
+//得到Mat格式的相机内参
+//输入不需要初始化的cameraMatrix和discoeffs
+//cameraType是"depth"or"color"
+//discoeffs:k1, k2, p1, p2, k3
+void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix,cv::Mat &disCoeffs,const string cameraType)
 {
-	k4a_calibration_camera_t depthCameraCalibration = calibration.depth_camera_calibration;
-	k4a_calibration_camera_t colorCameraCalibration = calibration.color_camera_calibration;
+	assert(cameraType == "depth" || cameraType == "color");
+
+	k4a_calibration_camera_t CameraCalibration = 
+		cameraType == "depth" ? calibration.depth_camera_calibration:calibration.color_camera_calibration;
 	//kinect相机应该有4个传感器，下面的外参是4*4的一个矩阵，其中下标[i][j]应该是第i的传感器到第j个传感器的转化矩阵
 	//[0][1]应该是depth到color的矩阵，但是没测试过，以后用到在测试。
 	k4a_calibration_extrinsics_t extrinsics = calibration.extrinsics[0][0];
@@ -45,7 +51,55 @@ void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& intrisicParam)
 	//cout << extrinsics.rotation[0] << " " << extrinsics.rotation[1] << " " << extrinsics.rotation[2] << endl;
 	//cout << extrinsics.translation[0] << " " << extrinsics.translation[1] << " " << extrinsics.translation[2] << endl;
 
+	k4a_calibration_extrinsics_t Extrinsics= CameraCalibration.extrinsics;
+	k4a_calibration_intrinsics_t Intrinsics= CameraCalibration.intrinsics;
+	//cout << "depth resolution width,height:" << depthCameraCalibration.resolution_width 
+	//	<< " " << depthCameraCalibration.resolution_height << endl;//640*576
+	//测试得，下面rotation为单位阵，translation为0向量
+	//cout << depthExtrinsics.rotation[0] << " " << depthExtrinsics.rotation[1] << " " << depthExtrinsics.rotation[2] << " "
+	//	<< depthExtrinsics.rotation[3] << " " << depthExtrinsics.rotation[4] << " " << depthExtrinsics.rotation[5] << " "
+	//	<< depthExtrinsics.rotation[6] << " " << depthExtrinsics.rotation[7] << " " << depthExtrinsics.rotation[8] << endl;
+	//cout << depthExtrinsics.translation[0] << " " << depthExtrinsics.translation[1] << " " << depthExtrinsics.translation[2] << endl;
 
+	//cout << "color resolution width,height:" << colorCameraCalibration.resolution_width 
+	//	<< " " << colorCameraCalibration.resolution_height << endl;//1280*720
+	//测试得，下面rotation和translation有数值, 等于上面[0][1]时候的数值，也就是深度相机在RGB相机下的位姿
+	//0.999999 0.0015539 -8.61625e-05 -0.00153783 0.995126 0.098598 0.000238954 -0.0985978 0.995127
+	//-31.9395 -1.91011 4.09401
+	//cout << colorExtrinsics.rotation[0] << " " << colorExtrinsics.rotation[1] << " " << colorExtrinsics.rotation[2] << " "
+	//	<< colorExtrinsics.rotation[3] << " " << colorExtrinsics.rotation[4] << " " << colorExtrinsics.rotation[5] << " "
+	//	<< colorExtrinsics.rotation[6] << " " << colorExtrinsics.rotation[7] << " " << colorExtrinsics.rotation[8] << endl;
+	//cout << colorExtrinsics.translation[0] << " " << colorExtrinsics.translation[1] << " " << colorExtrinsics.translation[2] << endl;
+
+	////内参的排列顺序是：cx,cy,fx,fy,k1,k2,k3,k4,k5,k6,codx,cody,p2, p1, metic_radius 
+	//cout << "depth camera intriParam count:" << depthIntrinsics.parameter_count << endl;//14
+	//cout << "color camera intriParam count:" << colorIntrinsics.parameter_count << endl;//14
+	////330.894 338.103 504.961 504.991 0.670492 0.0399937 -7.73619e-05 1.0134 0.189252 0.000535376 0 0 8.86593e-05 -8.28256e-05 0
+	//cout << "depth intriParam:";
+	//for (int i = 0; i < 15; i++)
+	//	cout << depthIntrinsics.parameters.v[i] << " ";
+	//cout << endl;
+	////640.579 364.825 600.539 600.3 0.686572 -2.72132 1.53403 0.564911 -2.56053 1.46999 0 0 -0.000185118 0.000993749 0
+	//cout << "color intriParam:";
+	//for (int i = 0; i < 15; i++)
+	//	cout << colorIntrinsics.parameters.v[i] << " ";
+	//cout << endl;
+
+	////opencv自带的标定是算出了cx,cy,fx,fy, k1, k2, k3,p1,p2
+	//各个参数在Mat中的具体位置可以看opencv文档中关于calibrateCamera（）的介绍
+	 cameraMatrix= cv::Mat(3, 3, CV_32FC1,cv::Scalar::all(0));
+	 disCoeffs = cv::Mat(1, 5, CV_32FC1, cv::Scalar::all(0));
+	 cameraMatrix.at<float>(0, 0) = Intrinsics.parameters.param.fx;
+	 cameraMatrix.at<float>(0, 2) = Intrinsics.parameters.param.cx;
+	 cameraMatrix.at<float>(1, 1) = Intrinsics.parameters.param.fy;
+	 cameraMatrix.at<float>(1, 2) = Intrinsics.parameters.param.cy;
+	 cameraMatrix.at<float>(2, 2) = 1;
+
+	 disCoeffs.at<float>(0) = Intrinsics.parameters.param.k1;
+	 disCoeffs.at<float>(1) = Intrinsics.parameters.param.k2;
+	 disCoeffs.at<float>(2) = Intrinsics.parameters.param.p1;
+	 disCoeffs.at<float>(3) = Intrinsics.parameters.param.p2;
+	 disCoeffs.at<float>(4) = Intrinsics.parameters.param.k3;
 
 }
 void k4a::KinectAPI::ReleaseDevice() 
