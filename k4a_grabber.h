@@ -29,10 +29,23 @@ public:
 	void GetOpenCVImage(cv::Mat &colorMat, cv::Mat &depthMat, cv::Mat& depthcolorMat);
 	void ShowOpenCVImage(cv::Mat Img, std::string name);
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
+	//TODO(zzq)::获取相机内参
+	//得到Opencv格式的相机内参
+	void GetIntrinsicParam(cv::Mat &intrisicParam);
+	//TODO(zzq):目标坐标系下的XYZ值
+	//得到目标坐标系下的xyz值
+	//输入图像上的像素坐标，输出目标坐标系下的xyz值
+	void GetXYZAfterTransformation(const cv::Point2i coord, cv::Point3f &coord3D, const cv::Mat transformation);
+	//TODO(zzq):相机坐标系下的xyz值
+	//得到相机坐标系下的xyz值
+	//输入图像上的像素坐标，输出相机坐标系下的xyz值
+	void GetXYZAtViewOfCamera(const cv::Point2i coord, cv::Point3f &coord3D);
 	//用完相机后，将相机资源释放。
 	void ReleaseDevice();
 
 private:
+	// TODO(zzq):确定配置文件格式，写读配置的函数
+	void ReadConfig(std::string dir);
 	//相机数量
 	uint32_t device_count;
 	k4a_device_t device = NULL;

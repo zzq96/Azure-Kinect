@@ -23,7 +23,6 @@ int main()
 	//cv::imshow(name, img_color);
 	//cv::waitKey(0);
 
-
 	return 0;
 }
 
