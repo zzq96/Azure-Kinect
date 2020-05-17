@@ -30,9 +30,12 @@ public:
 	void GetOpenCVImage(cv::Mat &colorMat, cv::Mat &depthMat, cv::Mat& depthcolorMat);
 	void ShowOpenCVImage(cv::Mat Img, std::string name);
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
-	//TODO(zzq)::获取相机内参
-	//得到Opencv格式的相机内参
+
+	//得到Mat格式的相机内参
+	//cameraType是"depth"or"color"
+	//discoeffs:k1, k2, p1, p2, k3
 	void GetIntrinsicParam(cv::Mat& cameraMatrix, cv::Mat& disCoeffs, const std::string cameraType);
+
 	//TODO(zzq):目标坐标系下的XYZ值
 	//得到目标坐标系下的xyz值
 	//输入图像上的像素坐标，输出目标坐标系下的xyz值

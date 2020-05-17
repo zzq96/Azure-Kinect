@@ -34,8 +34,8 @@ k4a::KinectAPI::KinectAPI()
 		throw ("Failed to get calibration\n");
 	}
 }
+
 //得到Mat格式的相机内参
-//输入不需要初始化的cameraMatrix和discoeffs
 //cameraType是"depth"or"color"
 //discoeffs:k1, k2, p1, p2, k3
 void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix,cv::Mat &disCoeffs,const string cameraType)
