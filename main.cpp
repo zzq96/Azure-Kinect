@@ -27,12 +27,20 @@ int main()
 		cout << depthDisCoeffs.at<float>(i) << " ";
 	cout << endl;
 	
-	//std::string name = "imgs/img0";
-	//cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
-	//cv::Mat img_color = cv::imread(name+"_color.png");
-	//kinect.ShowOpenCVImage(img_color, name);
-	//cv::imshow(name, img_color);
-	//cv::waitKey(0);
+	std::string name = "imgs/img1";
+	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
+	cv::Mat img_color = cv::imread(name+"_color.png");
+	//深度应该在1431左右，就设置为1440吧
+	//for (int h = 355; h < 365; h++)
+	//{
+	//	for (int w = 0; w < 1280; w++)
+	//		cout << img_depth.at<UINT16>(h, w) << " ";
+	//	cout << endl;
+	//}
+
+	kinect.ShowOpenCVImage(img_color, name);
+	cv::imshow(name, img_color);
+	cv::waitKey(0);
 
 	return 0;
 }
