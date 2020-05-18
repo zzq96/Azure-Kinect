@@ -27,10 +27,10 @@ int main()
 		cout << depthDisCoeffs.at<float>(i) << " ";
 	cout << endl;
 	
-	std::string name = "imgs/img1";
+	std::string name = "imgs/img3";
 	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
 	cv::Mat img_color = cv::imread(name+"_color.png");
-	//深度应该在1431左右，就设置为1440吧
+	//相机到桌面的深度应该在1380左右， 桌面到地板700
 	//for (int h = 355; h < 365; h++)
 	//{
 	//	for (int w = 0; w < 1280; w++)
