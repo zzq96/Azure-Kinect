@@ -155,10 +155,15 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConComponent.cpp" />
+    <ClCompile Include="Function_SHUJING.cpp" />
+    <ClCompile Include="Function_ZZQ.cpp" />
     <ClCompile Include="k4a_grabber.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Function_SHUJING.h" />
+    <ClInclude Include="Function_ZZQ.h" />
     <ClInclude Include="k4a_grabber.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
