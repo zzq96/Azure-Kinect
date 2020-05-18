@@ -10,7 +10,6 @@ TIME:2019-05-17
 #include <time.h>
 #include <stdlib.h>
 #include "Function_SHUJING.h"
-#include "PicoZense_api2.h"
 #include "ConComponent.h"
 
 
@@ -30,15 +29,15 @@ void Image_Binary(unsigned char* image, int wid, int hei)
 
 }
 
-int ObjectLocation(PsCameraParameters cameraParameters, PsDepthPixel * DepthFrameData, BYTE* DepthImage, int iDistance, int iWid, int iHei, int iTop, int iBottom, Object* ObjectRes)
+int ObjectLocation(cv::Mat cameraParameters, UINT16 * DepthFrameData, BYTE* DepthImage, int iDistance, int iWid, int iHei, int iTop, int iBottom, Object* ObjectRes)
 {
 	int i, j, k;
 	int iCen = 0;
 	int iHis[256];
-	float fx = cameraParameters.fx;
-	float fy = cameraParameters.fy;
-	float cx = cameraParameters.cx;
-	float cy = cameraParameters.cy;
+	float fx = cameraParameters.at<float>(0, 0);
+	float fy = cameraParameters.at<float>(1, 1);
+	float cx = cameraParameters.at<float>(0, 2);
+	float cy = cameraParameters.at<float>(1, 2);
 	//处理二值化图
 	BYTE* image_t1; //深度数据
 	image_t1 = (BYTE*)malloc(1000 * 1000 * sizeof(BYTE));

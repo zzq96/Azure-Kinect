@@ -17,6 +17,7 @@ TIME:2019-07-29
 #define mem(x,y) memset(x,y,sizeof(x))
 typedef unsigned long long ULL;
 typedef long long LL;
+using namespace std;
 
 struct Point {
 	double x, y;
