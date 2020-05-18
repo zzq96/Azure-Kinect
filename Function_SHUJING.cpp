@@ -31,6 +31,7 @@ void Image_Binary(unsigned char* image, int wid, int hei)
 
 int ObjectLocation(cv::Mat cameraParameters, UINT16 * DepthFrameData, BYTE* DepthImage, int iDistance, int iWid, int iHei, int iTop, int iBottom, Object* ObjectRes)
 {
+	const int DEPTH = 1440;//相机距离桌面的高度
 	int i, j, k;
 	int iCen = 0;
 	int iHis[256];
@@ -84,7 +85,7 @@ int ObjectLocation(cv::Mat cameraParameters, UINT16 * DepthFrameData, BYTE* Dept
 	memset(miny1, 0, sizeof(int)* 10);
 	memset(maxy1, 0, sizeof(int)* 10);
 	int gao1 = 0;
-	int inum1[1400];
+	int inum1[DEPTH];
 	int inum_all = 0;
 	int iobj_num=0;//检测到的快递数量
 	CodeComponent rescomponent[20]; //连通元
@@ -162,16 +163,16 @@ int ObjectLocation(cv::Mat cameraParameters, UINT16 * DepthFrameData, BYTE* Dept
 			//计算物品高度
 			gao1 = 0;			
 			inum_all = 0;
-			memset(inum1, 0, 1400 * sizeof(int));//统计高度
+			memset(inum1, 0, DEPTH * sizeof(int));//统计高度
 			for (i = miny; i < maxy; i++)
 			{
 				for (j = minx; j < maxx; j++)
 				{
-					if (DepthFrameData[iWid*i + j]<1400)
+					if (DepthFrameData[iWid*i + j]<DEPTH)
 						inum1[DepthFrameData[iWid*i + j]]++;
 				}
 			}
-			for (i = 20; i<1400; i++)
+			for (i = 20; i<DEPTH; i++)
 			{
 				inum_all = inum_all + inum1[i];
 				if (inum_all>(maxx - minx)*(maxy - miny) / 5)
