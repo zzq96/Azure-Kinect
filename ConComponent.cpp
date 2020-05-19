@@ -534,7 +534,9 @@ void Calculate_centroidc(CodeComponent* component, int comp_num)
 int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponent* rescomponent, BOOL imageflag, int max_num)
 {
 	// 指向源图像的指针
-	BYTE* pdibData;
+	int* pdibData = (int*) malloc(lWidth*lHeight*sizeof(int));
+	for (int i = 0; i < lHeight * lWidth; i++)
+		pdibData[i] = (int)lpDIB[i];
 	//新图像的指针
 	int* pdata;
 	pdata = (int*)malloc((lWidth + 2) * (lHeight + 2) * sizeof(int));
@@ -543,7 +545,6 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 	// 图像每行的字节数
 	LONG	lLineBytes;
 
-	pdibData = lpDIB;
 	lLineBytes = lWidth;
 
 	int count;
@@ -961,7 +962,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 				k++;
 		}
 	}
-	int Map[500];//value到precdeletenum的映射
+	int Map[1000];//value到precdeletenum的映射
 	memset(Map, -1, sizeof(Map));
 	for (i = 1, precdeletenum = 0; i < count; i++)//把各连通元的根的索引提取出来存放在pstack数组中，以减少后面访问，操作的时间
 	{
@@ -975,6 +976,9 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 			rescomponent[precdeletenum].compshape.maxy = stack[i].compshape.maxy - 1;
 			rescomponent[precdeletenum].compshape.miny = stack[i].compshape.miny - 1;
 			rescomponent[precdeletenum].value = stack[i].value;
+		//	printf("i%d, value:%d\n", precdeletenum, stack[i].value);
+		//	if(stack[i].value==283)
+		//	printf("rescompont\n");
 			precdeletenum++;
 		}
 		if (precdeletenum > max_num - 1)
@@ -1000,6 +1004,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 					if (index == 255) pdata[temp] = 255;
 					else
 						pdata[temp] = index;
+		//			if (pdata[temp] == 283)printf("w");
 
 
 				}
@@ -1014,7 +1019,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 				temp = lLineBytes * (i - 1) + j - 1;
 				anothertemp = i * (lWidth + 2) + j;
 				if (pdata[anothertemp] % 255 != 0 && pdata[anothertemp] != 0)
-					pdibData[temp] = pdata[anothertemp]%255;
+					pdibData[temp] = pdata[anothertemp];
 				else
 					pdibData[temp] = pdata[anothertemp];
 			}
@@ -1040,6 +1045,11 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 
 	for (int i = 0; i < precdeletenum; i++)
 	{
+		//cout << "pixelnum:"<<rescomponent[i].pixelnum << endl;
+		//cout << "value:"<<rescomponent[i].value << endl;
+		//cout << "sign"<<rescomponent[i].sign << endl;
+		//cout << "num" << rescomponent[i].P.size() << endl;
+			
 		//rescomponent[i].R = rescomponent[i].P;
 		Convex(rescomponent[i].P, rescomponent[i].R);
 		std::vector<Point> t;
@@ -1210,101 +1220,101 @@ int Partition(double* aaa, int low, int high, int* sn)
 	sn[low] = k;
 	return pivotpos;
 }
-int Cal_Round(BYTE* pImage, int iWidth, int iHeight, int iTop, int iBottom, int iLeft, int iRight, CPoint Round[8], int iValue)
-{
-	int i, j;
-	for (i = iTop; i < iBottom + 1; i++)//左上
-	{
-		if (pImage[i * iWidth + iLeft] == iValue)
-		{
-			Round[0].x = iLeft;
-			Round[0].y = i;
-			break;
-		}
-	}
-	if (i > iBottom)
-		return 0;
-	for (j = iLeft; j < iRight + 1; j++)//上左
-	{
-		if (pImage[iTop * iWidth + j] == iValue)
-		{
-			Round[1].x = j;
-			Round[1].y = iTop;
-			break;
-		}
-	}
-	if (j > iRight)
-		return -1;
-	for (j = iRight; j > iLeft - 1; j--)//上右
-	{
-		if (pImage[iTop * iWidth + j] == iValue)
-		{
-			Round[2].x = j;
-			Round[2].y = iTop;
-			break;
-		}
-	}
-	if (j < iLeft)
-		return -2;
-	for (i = iTop; i < iBottom + 1; i++)//右上
-	{
-		if (pImage[i * iWidth + iRight] == iValue)
-		{
-			Round[3].x = iRight;
-			Round[3].y = i;
-			break;
-		}
-	}
-	if (i > iBottom)
-		return -3;
-	for (i = iBottom; i > iTop - 1; i--)//右下
-	{
-		if (pImage[i * iWidth + iRight] == iValue)
-		{
-			Round[4].x = iRight;
-			Round[4].y = i;
-			break;
-		}
-	}
-	if (i < iTop)
-		return -4;
-	for (j = iRight; j > iLeft - 1; j--)//BottomRight
-	{
-		if (pImage[iBottom * iWidth + j] == iValue)
-		{
-			Round[5].x = j;
-			Round[5].y = iBottom;
-			break;
-		}
-	}
-	if (j < iLeft)
-		return -5;
-	for (j = iLeft; j < iRight + 1; j++)//BottomLeft
-	{
-		if (pImage[iBottom * iWidth + j] == iValue)
-		{
-			Round[6].x = j;
-			Round[6].y = iBottom;
-			break;
-		}
-	}
-	if (j > iRight)
-		return -6;
-	for (i = iBottom; i > iTop - 1; i--)//LeftBottom
-	{
-		if (pImage[i * iWidth + iLeft] == iValue)
-		{
-			Round[7].x = iLeft;
-			Round[7].y = i;
-			break;
-		}
-	}
-	if (i < iTop)
-		return -7;
-	return 1;
-
-
-}
+//int Cal_Round(BYTE* pImage, int iWidth, int iHeight, int iTop, int iBottom, int iLeft, int iRight, CPoint Round[8], int iValue)
+//{
+//	int i, j;
+//	for (i = iTop; i < iBottom + 1; i++)//左上
+//	{
+//		if (pImage[i * iWidth + iLeft] == iValue)
+//		{
+//			Round[0].x = iLeft;
+//			Round[0].y = i;
+//			break;
+//		}
+//	}
+//	if (i > iBottom)
+//		return 0;
+//	for (j = iLeft; j < iRight + 1; j++)//上左
+//	{
+//		if (pImage[iTop * iWidth + j] == iValue)
+//		{
+//			Round[1].x = j;
+//			Round[1].y = iTop;
+//			break;
+//		}
+//	}
+//	if (j > iRight)
+//		return -1;
+//	for (j = iRight; j > iLeft - 1; j--)//上右
+//	{
+//		if (pImage[iTop * iWidth + j] == iValue)
+//		{
+//			Round[2].x = j;
+//			Round[2].y = iTop;
+//			break;
+//		}
+//	}
+//	if (j < iLeft)
+//		return -2;
+//	for (i = iTop; i < iBottom + 1; i++)//右上
+//	{
+//		if (pImage[i * iWidth + iRight] == iValue)
+//		{
+//			Round[3].x = iRight;
+//			Round[3].y = i;
+//			break;
+//		}
+//	}
+//	if (i > iBottom)
+//		return -3;
+//	for (i = iBottom; i > iTop - 1; i--)//右下
+//	{
+//		if (pImage[i * iWidth + iRight] == iValue)
+//		{
+//			Round[4].x = iRight;
+//			Round[4].y = i;
+//			break;
+//		}
+//	}
+//	if (i < iTop)
+//		return -4;
+//	for (j = iRight; j > iLeft - 1; j--)//BottomRight
+//	{
+//		if (pImage[iBottom * iWidth + j] == iValue)
+//		{
+//			Round[5].x = j;
+//			Round[5].y = iBottom;
+//			break;
+//		}
+//	}
+//	if (j < iLeft)
+//		return -5;
+//	for (j = iLeft; j < iRight + 1; j++)//BottomLeft
+//	{
+//		if (pImage[iBottom * iWidth + j] == iValue)
+//		{
+//			Round[6].x = j;
+//			Round[6].y = iBottom;
+//			break;
+//		}
+//	}
+//	if (j > iRight)
+//		return -6;
+//	for (i = iBottom; i > iTop - 1; i--)//LeftBottom
+//	{
+//		if (pImage[i * iWidth + iLeft] == iValue)
+//		{
+//			Round[7].x = iLeft;
+//			Round[7].y = i;
+//			break;
+//		}
+//	}
+//	if (i < iTop)
+//		return -7;
+//	return 1;
+//
+//
+//}
 //计算图像的灰度范围
 void Gray_Area(BYTE* proImage, int lWidth, int lHeight, int& gray1, int& gray2)
 {

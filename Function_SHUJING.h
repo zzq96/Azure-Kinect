@@ -27,6 +27,7 @@ typedef struct aa
 }Object;
 
 void Image_Binary(BYTE* image, int wid, int hei);
-int ObjectLocation(cv::Mat cameraParameters, PsDepthPixel * DepthFrameData, BYTE* DepthImage, int iDistance, int iWid, int iHei, int iTop, int iBottom, Object* ObjectRes);
+//iDistance桌面距离地面的高度
+int ObjectLocation(cv::Mat cameraParameters, UINT16*  DepthFrameData, int iDistance, int iWid, int iHei, int iTop, int iBottom, Object* ObjectRes);
 int iHis_part(int* iHis, int* iBegin, int* iEnd,int inum);
 #endif

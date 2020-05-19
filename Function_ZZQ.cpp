@@ -182,6 +182,7 @@ void RC(std::vector<Point>& v, std::vector<Point>& ans)
 	ans.resize(4);
 	double min_s = 1e18;
 	int cnt = v.size();
+	assert(cnt >= 4);
 	v.push_back(v[0]);
 	int u = 1, r = 1, l = 1;
 	for (int i = 0; i < cnt; ++i) {

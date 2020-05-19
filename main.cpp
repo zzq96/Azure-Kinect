@@ -12,27 +12,44 @@
 #include <pcl/common/common.h>
 #include "k4a_grabber.h"
 #include<ctime>
+#include"Function_SHUJING.h"
 
+k4a::KinectAPI kinect;
+cv::Mat depthCameraMatrix, depthDisCoeffs;
+Object ObjectRes[10];
 int main()
 {
-	k4a::KinectAPI kinect;
 	//cv::Mat depthMat, colorMat, depthcolorMat;
 	//kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat);
 	//kinect.ShowOpenCVImage(colorMat, "color");
 	//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor")
-	cv::Mat depthCameraMatrix, depthDisCoeffs;
 	kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
 	cout << "depth intriParam:";
 	for (int i = 0; i < 5; i++)
 		cout << depthDisCoeffs.at<float>(i) << " ";
 	cout << endl;
 	
-	//std::string name = "imgs/img0";
-	//cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
-	//cv::Mat img_color = cv::imread(name+"_color.png");
+	std::string name = "imgs/img1";
+	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
+	cv::Mat img_color = cv::imread(name+"_color.png");
 	//kinect.ShowOpenCVImage(img_color, name);
 	//cv::imshow(name, img_color);
 	//cv::waitKey(0);
+	int iDistance = 1380;
+	for (int i = 0; i < 10; i++)
+	{
+		ObjectRes[i].hei = 0;
+		ObjectRes[i].len = 0;
+		ObjectRes[i].wid = 0;
+		ObjectRes[i].vol = 0;
+		ObjectRes[i].minx = 0;
+		ObjectRes[i].maxx = 0;
+		ObjectRes[i].miny = 0;
+		ObjectRes[i].maxy = 0;
+
+	}
+	int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
+	cout << "iObj_num:"<<iObj_num << endl;
 
 	return 0;
 }

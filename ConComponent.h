@@ -49,7 +49,7 @@ void ReleaseList(runnode **HeadRun,int Length);//释放连通元列表内存
 void Calculate_centroidc(CodeComponent* component, int comp_num);
 int ConCompLabelling8_label(BYTE *lpDIB, LONG lWidth, LONG lHeight, CodeComponent *rescomponent, BOOL imageflag,int max_num);
 int Cal_Ang(BYTE *pImage, int iWidth, int iHeight, int iTop, int iBottom, int iLeft, int iRight, int iValue);
-int Cal_Round(BYTE *pImage, int iWidth, int iHeight, int iTop, int iBottom, int iLeft, int iRight,CPoint Round[8], int iValue);//计算外包围点
+//int Cal_Round(BYTE *pImage, int iWidth, int iHeight, int iTop, int iBottom, int iLeft, int iRight,CPoint Round[8], int iValue);//计算外包围点
 //连通元从左到右排序
 void Comp_Order(CodeComponent *rescomponent, int Comp_num);
 //快速排序
