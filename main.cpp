@@ -29,12 +29,13 @@ int main()
 		cout << depthDisCoeffs.at<float>(i) << " ";
 	cout << endl;
 	
-	std::string name = "imgs/img1";
+	for (int i = 1; i <= 6; i++)
+	{
+	std::string name = "imgs/img" + to_string(i);
+	cout << name << endl;
 	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
 	cv::Mat img_color = cv::imread(name+"_color.png");
-	//kinect.ShowOpenCVImage(img_color, name);
-	//cv::imshow(name, img_color);
-	//cv::waitKey(0);
+	cv::Mat img_depthcolor = cv::imread(name+"_depthcolor.png");
 	int iDistance = 1380;
 	for (int i = 0; i < 10; i++)
 	{
@@ -50,7 +51,15 @@ int main()
 	}
 	int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
 	cout << "iObj_num:"<<iObj_num << endl;
+	for (int i = 0; i < iObj_num; i++)
+	{
 
+		Draw_Convex(img_depthcolor, img_depthcolor.cols, img_depthcolor.rows, ObjectRes[i].R);
+	}
+	kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
+
+
+	}
 	return 0;
 }
 

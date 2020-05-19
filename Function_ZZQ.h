@@ -12,6 +12,8 @@ TIME:2019-07-29
 #include<vector>
 #include <windows.h>
 #include<minwindef.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui_c.h>
 #define INF 0x3f3f3f3f
 #define INFLL 0x3f3f3f3f3f3f3f3f
 #define mem(x,y) memset(x,y,sizeof(x))
@@ -53,7 +55,7 @@ struct Point {
 };
 typedef Point Vector;
 void Convex(std::vector<Point>& P, std::vector<Point>& R);
-void Draw_Convex(BYTE* image, LONG lwidth, LONG lheight, const std::vector<Point>& R);
+void Draw_Convex(cv::Mat &image, LONG lwidth, LONG lheight, const std::vector<Point>& R);
 void RC(std::vector<Point>& P, std::vector<Point> & t);
 bool pointIsInRect(Point p, const std::vector<Point> & R);
 #endif
