@@ -23,24 +23,32 @@ int main()
 	{
 		cv::Mat img_depth, colorMat, img_depthcolor;
 		kinect.GetOpenCVImage(colorMat, img_depth, img_depthcolor);
-		//colorMat.at<INT32>(640, 360) = 0;
-		//colorMat.at<INT32>(641, 360) = 0;
-		//colorMat.at<INT32>(639, 360) = 0;
-		//colorMat.at<INT32>(640, 361) = 0;
-		//colorMat.at<INT32>(640, 359) = 0;
-		colorMat.at<cv::Vec4b>(360, 640)[0] = 0;
-		colorMat.at<cv::Vec4b>(360, 640)[1] = 0;
-		colorMat.at<cv::Vec4b>(360, 640)[2] = 0;
-		colorMat.at<cv::Vec4b>(360, 641)[0] = 0;
-		colorMat.at<cv::Vec4b>(360, 641)[1] = 0;
-		colorMat.at<cv::Vec4b>(360, 641)[2] = 0;
-		colorMat.at<cv::Vec4b>(360, 639)[0] = 0;
-		colorMat.at<cv::Vec4b>(360, 639)[1] = 0;
-		colorMat.at<cv::Vec4b>(360, 639)[2] = 0;
-		colorMat.at<cv::Vec4b>(361, 640)[3]= 0;
-		colorMat.at<cv::Vec4b>(359, 640)[0] = 0;
-		colorMat.at<cv::Vec4b>(359, 640)[1] = 0;
-		colorMat.at<cv::Vec4b>(359, 640)[2] = 0;
+		////把中心点涂黑，方便找到桌面上的（0,0）点
+		//colorMat.at<cv::Vec4b>(360, 640)[0] = 0;
+		//colorMat.at<cv::Vec4b>(360, 640)[1] = 0;
+		//colorMat.at<cv::Vec4b>(360, 640)[2] = 0;
+		//colorMat.at<cv::Vec4b>(360, 641)[0] = 0;
+		//colorMat.at<cv::Vec4b>(360, 641)[1] = 0;
+		//colorMat.at<cv::Vec4b>(360, 641)[2] = 0;
+		//colorMat.at<cv::Vec4b>(360, 639)[0] = 0;
+		//colorMat.at<cv::Vec4b>(360, 639)[1] = 0;
+		//colorMat.at<cv::Vec4b>(360, 639)[2] = 0;
+		//colorMat.at<cv::Vec4b>(361, 640)[3]= 0;
+		//colorMat.at<cv::Vec4b>(359, 640)[0] = 0;
+		//colorMat.at<cv::Vec4b>(359, 640)[1] = 0;
+		//colorMat.at<cv::Vec4b>(359, 640)[2] = 0;
+
+		//把机械臂部分深度设为0，这样就不会检测到机械臂了
+		for (int h = 0; h < 400; h++)
+			for (int w = 0; w < 500; w++)
+			{
+				img_depth.at<UINT16>(h, w) = 0;
+				//img_depthcolor.at<cv::Vec4b>(h, w)[0] = 0;
+				//img_depthcolor.at<cv::Vec4b>(h, w)[1] = 0;
+				//img_depthcolor.at<cv::Vec4b>(h, w)[2] = 0;
+			}
+		
+
 		kinect.ShowOpenCVImage(colorMat, "color");
 		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
 		kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
