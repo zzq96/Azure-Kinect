@@ -49,13 +49,13 @@ int main()
 			}
 		
 
-		kinect.ShowOpenCVImage(colorMat, "color");
-		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
+		//kinect.ShowOpenCVImage(colorMat, "color");
+		//kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
 		kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
-		cout << "depth intriParam:";
-		for (int i = 0; i < 5; i++)
-			cout << depthDisCoeffs.at<float>(i) << " ";
-		cout << endl;
+		//cout << "depth intriParam:";
+		//for (int i = 0; i < 5; i++)
+		//	cout << depthDisCoeffs.at<float>(i) << " ";
+		//cout << endl;
 		int iDistance = 1290;
 		int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
 		cout << "iObj_num:"<<iObj_num << endl;
