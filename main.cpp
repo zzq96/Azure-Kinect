@@ -19,47 +19,78 @@ cv::Mat depthCameraMatrix, depthDisCoeffs;
 Object ObjectRes[10];
 int main()
 {
-	//cv::Mat depthMat, colorMat, depthcolorMat;
-	//kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat);
-	//kinect.ShowOpenCVImage(colorMat, "color");
-	//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor")
-	kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
-	cout << "depth intriParam:";
-	for (int i = 0; i < 5; i++)
-		cout << depthDisCoeffs.at<float>(i) << " ";
-	cout << endl;
+	for (int i = 0; i < 50; i++)
+	{
+		cv::Mat img_depth, colorMat, img_depthcolor;
+		kinect.GetOpenCVImage(colorMat, img_depth, img_depthcolor);
+		//colorMat.at<INT32>(640, 360) = 0;
+		//colorMat.at<INT32>(641, 360) = 0;
+		//colorMat.at<INT32>(639, 360) = 0;
+		//colorMat.at<INT32>(640, 361) = 0;
+		//colorMat.at<INT32>(640, 359) = 0;
+		colorMat.at<cv::Vec4b>(360, 640)[0] = 0;
+		colorMat.at<cv::Vec4b>(360, 640)[1] = 0;
+		colorMat.at<cv::Vec4b>(360, 640)[2] = 0;
+		colorMat.at<cv::Vec4b>(360, 641)[0] = 0;
+		colorMat.at<cv::Vec4b>(360, 641)[1] = 0;
+		colorMat.at<cv::Vec4b>(360, 641)[2] = 0;
+		colorMat.at<cv::Vec4b>(360, 639)[0] = 0;
+		colorMat.at<cv::Vec4b>(360, 639)[1] = 0;
+		colorMat.at<cv::Vec4b>(360, 639)[2] = 0;
+		colorMat.at<cv::Vec4b>(361, 640)[3]= 0;
+		colorMat.at<cv::Vec4b>(359, 640)[0] = 0;
+		colorMat.at<cv::Vec4b>(359, 640)[1] = 0;
+		colorMat.at<cv::Vec4b>(359, 640)[2] = 0;
+		kinect.ShowOpenCVImage(colorMat, "color");
+		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
+		kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
+		cout << "depth intriParam:";
+		for (int i = 0; i < 5; i++)
+			cout << depthDisCoeffs.at<float>(i) << " ";
+		cout << endl;
+		int iDistance = 1290;
+		int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
+		cout << "iObj_num:"<<iObj_num << endl;
+		for (int i = 0; i < iObj_num; i++)
+		{
+			Draw_Convex(img_depthcolor, img_depthcolor.cols, img_depthcolor.rows, ObjectRes[i].R);
+		}
+		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
+	}
 	
-	for (int i = 1; i <= 6; i++)
-	{
-	std::string name = "imgs/img" + to_string(i);
-	cout << name << endl;
-	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
-	cv::Mat img_color = cv::imread(name+"_color.png");
-	cv::Mat img_depthcolor = cv::imread(name+"_depthcolor.png");
-	int iDistance = 1380;
-	for (int i = 0; i < 10; i++)
-	{
-		ObjectRes[i].hei = 0;
-		ObjectRes[i].len = 0;
-		ObjectRes[i].wid = 0;
-		ObjectRes[i].vol = 0;
-		ObjectRes[i].minx = 0;
-		ObjectRes[i].maxx = 0;
-		ObjectRes[i].miny = 0;
-		ObjectRes[i].maxy = 0;
+	//for (int i = 1; i <= 6; i++)
+	//{
+	//	std::string name = "imgs/img" + to_string(i);
+	//	cout << name << endl;
+	//	cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
+	//	cv::Mat img_color = cv::imread(name+"_color.png");
+	//	cv::Mat img_depthcolor = cv::imread(name+"_depthcolor.png");
+	//	int iDistance = 1380;
 
-	}
-	int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
-	cout << "iObj_num:"<<iObj_num << endl;
-	for (int i = 0; i < iObj_num; i++)
-	{
-
-		Draw_Convex(img_depthcolor, img_depthcolor.cols, img_depthcolor.rows, ObjectRes[i].R);
-	}
-	kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
-
-
-	}
+	//	//²âÊÔGetXYZAtCameraViewº¯Êý
+	//	//cv::Point2i point2D(360, 640);
+	//	for(int x = 0; x<720;x++)
+	//		for (int y = 0; y < 1280; y++)
+	//		{
+	//			cv::Point2i point2D(x, y);
+	//			cv::Point3f point3D;
+	//			//kinect.GetXYZAtCameraView(point2D, img_depth.at<UINT16>(point2D.x, point2D.y), point3D);
+	//			kinect.GetXYZAtCameraView(point2D, 1000, point3D);
+	//			if (abs(point3D.x) < 5 && abs(point3D.y) < 5)
+	//			{
+	//				cout << x << " " << y << endl;
+	//				cout << "x:" << point3D.x << " " << "y:" << point3D.y << " " << "z:" << point3D.z << endl;
+	//			}
+	//		}
+	//	
+	//	int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
+	//	cout << "iObj_num:"<<iObj_num << endl;
+	//	for (int i = 0; i < iObj_num; i++)
+	//	{
+	//		Draw_Convex(img_depthcolor, img_depthcolor.cols, img_depthcolor.rows, ObjectRes[i].R);
+	//	}
+	//	kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
+	//}
 	return 0;
 }
 

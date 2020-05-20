@@ -43,7 +43,7 @@ public:
 	//TODO(zzq):相机坐标系下的xyz值
 	//得到相机坐标系下的xyz值
 	//输入图像上的像素坐标，输出相机坐标系下的xyz值
-	void GetXYZAtViewOfCamera(const cv::Point2i coord, cv::Point3f &coord3D);
+	void GetXYZAtCameraView(const cv::Point2i point2D, float depth, cv::Point3f &point3D);
 	//用完相机后，将相机资源释放。
 	void ReleaseDevice();
 

@@ -193,9 +193,9 @@ int ObjectLocation(cv::Mat cameraParameters, UINT16* DepthFrameData, int iDistan
 			gao1 = 0;			
 			inum_all = 0;
 			memset(inum1, 0, DEPTH * sizeof(int));//统计高度
-			for (i = max(miny, 0); i < maxy; i++)
+			for (i = max(miny, 0); i < min(maxy, iHei); i++)
 			{
-				for (j = max(minx, 0); j < maxx; j++)
+				for (j = max(minx, 0); j < min(maxx, iWid); j++)
 				{
 					if (((UINT16*)DepthFrameData)[iWid*i + j]<DEPTH)
 						inum1[((UINT16*)DepthFrameData)[iWid*i + j]]++;

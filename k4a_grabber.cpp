@@ -425,3 +425,28 @@ void k4a::KinectAPI::GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr& clou
 		//k4a_image_release(irImage);
 		k4a_capture_release(capture);
 }
+void k4a::KinectAPI::GetXYZAtCameraView(const cv::Point2i point2D, float depth, cv::Point3f& point3D)
+{
+	//OpenCV类型的变量转化为kinect形式
+	k4a_float2_t point2d;
+	point2d.v[0] = point2D.x;
+	point2d.v[1] = point2D.y;
+	point2d.xy.x = point2D.x;
+	point2d.xy.y = point2D.y;
+
+	k4a_float3_t point3d;
+
+	int valid = 0;
+	//第一个K4A_CALIBRATION_TYPE_COLOR值输入的2D坐标是哪个相机图像的。第二个是指要转化到哪个相机视角下的3D坐标
+	k4a_result_t result = k4a_calibration_2d_to_3d(
+		&calibration, &point2d, depth, K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_COLOR, &point3d, &valid);
+	if (K4A_RESULT_SUCCEEDED != result)
+	{
+		throw error("Calibration contained invalid transformation parameters!");
+	}
+
+	//将3D坐标从kinect格式转化为OpenCV格式
+	point3D.x = point3d.xyz.x;
+	point3D.y = point3d.xyz.y;
+	point3D.z = point3d.xyz.z;
+}
