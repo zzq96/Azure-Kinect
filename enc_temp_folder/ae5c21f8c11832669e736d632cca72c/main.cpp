@@ -66,7 +66,6 @@ int main()
 				+img_depth.at<UINT16>(point2D.y+5, point2D.x-5)
 				+img_depth.at<UINT16>(point2D.y-5, point2D.x+5))/5
 				, point3D);
-			//机械臂基座坐标系和相机坐标系xy轴是对调的。
 			swap(point3D.x, point3D.y);
 			point3D.z = 1310 - point3D.z;
 
@@ -76,6 +75,7 @@ int main()
 			point3D.z += -robot_z + robot_len;
 			cout <<"real_robot:"<< "x:" << point3D.x << " " << "y:" << point3D.y << " " << "z:" << point3D.z << endl;
 
+			//机械臂基座坐标系和相机坐标系xy轴是对调的。
 		}
 		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
 	}
