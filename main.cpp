@@ -23,7 +23,7 @@ void DrawCenterPoints(cv::Mat& colorMat);
 //测试GetXYZAtCameraView函数
 void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
-int main()
+int main1()
 {
 	
 	try {
@@ -35,7 +35,7 @@ int main()
 		{
 			printf("第%d张图片\n", real_cnt);
 			cv::Mat depthMat, colorMat, depthcolorMat ,irMat, ircolorMat;
-			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat);
+			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, FALSE);
 
 			//for(int x = 400; x <410; x ++)
 			//	for (int y = 600; y <610;y++)
@@ -113,62 +113,62 @@ int main()
 	}
     return 0;
 }
-int main1()
+int main()
 {
 	for (int i = 0; i < 50; i++)
 	{
-		cv::Mat img_depth, img_color, img_depthcolor;
-		//kinect.GetOpenCVImage(img_color, img_depth, img_depthcolor);
-		DrawCenterPoints(img_color);
+		cv::Mat depthMat, colorMat, depthcolorMat ,irMat, ircolorMat;
+		kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, FALSE);
+		DrawCenterPoints(colorMat);
 
 		//把机械臂部分深度设为0，这样就不会检测到机械臂了
-		for (int h = 0; h < 400; h++)
-			for (int w = 0; w < 500; w++)
+		for (int h = 0; h < 0; h++)
+			for (int w = 0; w < 0; w++)
 			{
-				img_depth.at<UINT16>(h, w) = 0;
-				img_depthcolor.at<cv::Vec4b>(h, w)[0] = 0;
-				img_depthcolor.at<cv::Vec4b>(h, w)[1] = 0;
-				img_depthcolor.at<cv::Vec4b>(h, w)[2] = 0;
+				depthMat.at<UINT16>(h, w) = 0;
+				depthcolorMat.at<cv::Vec4b>(h, w)[0] = 0;
+				depthcolorMat.at<cv::Vec4b>(h, w)[1] = 0;
+				depthcolorMat.at<cv::Vec4b>(h, w)[2] = 0;
 			}
 		
-		kinect.ShowOpenCVImage(img_color, "img_color");
+		kinect.ShowOpenCVImage(colorMat, "img_color");
 		//
 		float robot_x = 336.931, robot_y = 394.312, robot_z = 114.206, robot_len = 215;
 		kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
 		int iDistance = 1300;
-		int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
+		int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMat.data, iDistance, depthMat.cols, depthMat.rows,10, 710, ObjectRes);
 		cout << "iObj_num:"<<iObj_num << endl;
 		for (int i = 0; i < iObj_num; i++)
 		{
-			Draw_Convex(img_depthcolor, img_depthcolor.cols, img_depthcolor.rows, ObjectRes[i].R);
-			float x=0, y=0;
-			for (int j = 0; j < 4; j++)
-			{
-				x += ObjectRes[i].R[j].x;
-				y += ObjectRes[i].R[j].y;
-			}
-			x /= 4, y /= 4;
-			cv::Point2i point2D((int)x, (int)y);
-			cv::Point3f point3D;
-			//kinect.GetXYZAtCameraView(point2D, img_depth.at<UINT16>(point2D.x, point2D.y), point3D);
-			kinect.GetXYZAtCameraView(point2D, 
-				(img_depth.at<UINT16>(point2D.y, point2D.x) +img_depth.at<UINT16>(point2D.y+5, point2D.x+5)
-				+img_depth.at<UINT16>(point2D.y-5, point2D.x-5)
-				+img_depth.at<UINT16>(point2D.y+5, point2D.x-5)
-				+img_depth.at<UINT16>(point2D.y-5, point2D.x+5))/5
-				, point3D);
-			//机械臂基座坐标系和相机坐标系xy轴是对调的。
-			swap(point3D.x, point3D.y);
-			point3D.z = 1310 - point3D.z;
+			Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+			//float x=0, y=0;
+			//for (int j = 0; j < 4; j++)
+			//{
+			//	x += ObjectRes[i].R[j].x;
+			//	y += ObjectRes[i].R[j].y;
+			//}
+			//x /= 4, y /= 4;
+			//cv::Point2i point2D((int)x, (int)y);
+			//cv::Point3f point3D;
+			////kinect.GetXYZAtCameraView(point2D, img_depth.at<UINT16>(point2D.x, point2D.y), point3D);
+			//kinect.GetXYZAtCameraView(point2D, 
+			//	(img_depth.at<UINT16>(point2D.y, point2D.x) +img_depth.at<UINT16>(point2D.y+5, point2D.x+5)
+			//	+img_depth.at<UINT16>(point2D.y-5, point2D.x-5)
+			//	+img_depth.at<UINT16>(point2D.y+5, point2D.x-5)
+			//	+img_depth.at<UINT16>(point2D.y-5, point2D.x+5))/5
+			//	, point3D);
+			////机械臂基座坐标系和相机坐标系xy轴是对调的。
+			//swap(point3D.x, point3D.y);
+			//point3D.z = 1310 - point3D.z;
 
-			cout << "pixel:"<<x << " " << y << endl;
-			point3D.x += robot_x;
-			point3D.y += robot_y;
-			point3D.z += -robot_z + robot_len;
-			cout <<"real_robot:"<< "x:" << point3D.x << " " << "y:" << point3D.y << " " << "z:" << point3D.z << endl;
+			//cout << "pixel:"<<x << " " << y << endl;
+			//point3D.x += robot_x;
+			//point3D.y += robot_y;
+			//point3D.z += -robot_z + robot_len;
+			//cout <<"real_robot:"<< "x:" << point3D.x << " " << "y:" << point3D.y << " " << "z:" << point3D.z << endl;
 
 		}
-		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
+		kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 	}
 	
 return 0;

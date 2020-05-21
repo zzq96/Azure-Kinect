@@ -117,7 +117,7 @@ void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name)
 	cv::destroyAllWindows();
 }
 //depth已转到RGB相机视角
-void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat)
+void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color)
 {
 	k4a_capture_t capture ;
 	//TODO(zzq):这个capture是每调用一次捕捉一帧，还是之后可以一直通过get_color_image调用？
@@ -145,16 +145,19 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		&depthImage);
 
 
-	k4a_transformation_t transformation = k4a_transformation_create(&calibration);
-
-	if (K4A_RESULT_SUCCEEDED == k4a_transformation_depth_image_to_color_camera(transformation, depthImageOld, depthImage))
+	if (isDepth2Color == TRUE)
 	{
-		printf(" | Depth16 res:%4dx%4d stride:%5d\n",
-			k4a_image_get_height_pixels(depthImage),
-			k4a_image_get_width_pixels(depthImage),
-			k4a_image_get_stride_bytes(depthImage));
+		k4a_transformation_t transformation = k4a_transformation_create(&calibration);
+		if (K4A_RESULT_SUCCEEDED == k4a_transformation_depth_image_to_color_camera(transformation, depthImageOld, depthImage))
+		{
+			printf(" | Depth16 res:%4dx%4d stride:%5d\n",
+				k4a_image_get_height_pixels(depthImage),
+				k4a_image_get_width_pixels(depthImage),
+				k4a_image_get_stride_bytes(depthImage));
+		}
+		else throw "transform depth image failed!";
 	}
-	else throw "transform depth image failed!";
+	else depthImage = depthImageOld;
 	k4a_image_t irImage = k4a_capture_get_ir_image(capture);
 
 	if (colorImage != NULL)
