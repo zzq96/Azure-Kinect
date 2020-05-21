@@ -27,7 +27,7 @@ public:
 	//colorMat is a color image in 8UC4 format belonging to RGBA
 	//depthMat is a depth image in 16UC1 format, 每个元素表示物体在相机视角下的深度，单位mm
 	//depthcolor is a pseudo-color image in 8UC4，将深度图转化为伪彩色图像以便可视化
-	void GetOpenCVImage(cv::Mat &colorMat, cv::Mat &depthMat, cv::Mat& depthcolorMat);
+	void GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat);
 	void ShowOpenCVImage(cv::Mat Img, std::string name);
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
 

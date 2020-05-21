@@ -34,8 +34,8 @@ int main()
 		for(int i = 0; i < img_cnt; i++)
 		{
 			printf("第%d张图片\n", real_cnt);
-			cv::Mat depthMat, colorMat, depthcolorMat;
-			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat);
+			cv::Mat depthMat, colorMat, depthcolorMat ,irMat, ircolorMat;
+			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat);
 
 			//for(int x = 400; x <410; x ++)
 			//	for (int y = 600; y <610;y++)
@@ -44,7 +44,7 @@ int main()
 			//cout << "finished ori" << endl;
 
 			kinect.ShowOpenCVImage(colorMat, "color");
-			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 			while (1)
 			{
 				printf("是否保存图片？输入y或者n\n");
@@ -64,6 +64,7 @@ int main()
 				cv::imwrite(name + "_depth.png", depthMat);
 				cv::imwrite(name + "_depthcolor.png", depthcolorMat);
 				cv::imwrite(name + "_color.png", colorMat);
+				cv::imwrite(name + "_ir.png", irMat);
 				real_cnt++;
 				printf("第%d张图片保存成功，按任意键继续拍照\n", real_cnt);
 				system("pause");
@@ -117,7 +118,7 @@ int main1()
 	for (int i = 0; i < 50; i++)
 	{
 		cv::Mat img_depth, img_color, img_depthcolor;
-		kinect.GetOpenCVImage(img_color, img_depth, img_depthcolor);
+		//kinect.GetOpenCVImage(img_color, img_depth, img_depthcolor);
 		DrawCenterPoints(img_color);
 
 		//把机械臂部分深度设为0，这样就不会检测到机械臂了

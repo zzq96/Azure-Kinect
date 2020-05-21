@@ -117,7 +117,7 @@ void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name)
 	cv::destroyAllWindows();
 }
 //depth已转到RGB相机视角
-void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat)
+void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat)
 {
 	k4a_capture_t capture ;
 	//TODO(zzq):这个capture是每调用一次捕捉一帧，还是之后可以一直通过get_color_image调用？
@@ -155,7 +155,7 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 			k4a_image_get_stride_bytes(depthImage));
 	}
 	else throw "transform depth image failed!";
-	//k4a_image_t irImage = k4a_capture_get_ir_image(capture);
+	k4a_image_t irImage = k4a_capture_get_ir_image(capture);
 
 	if (colorImage != NULL)
 	{
@@ -167,19 +167,20 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 	}
 	else throw "Capture colorImage failed!";
 
-	//if (irImage!= NULL)
-	//{
-	//	printf(" | Ir16 res:%4dx%4d stride:%5d\n",
-	//		k4a_image_get_height_pixels(irImage),
-	//		k4a_image_get_width_pixels(irImage),
-	//		k4a_image_get_stride_bytes(irImage));
+	if (irImage!= NULL)
+	{
+		printf(" | Ir16 res:%4dx%4d stride:%5d\n",
+			k4a_image_get_height_pixels(irImage),
+			k4a_image_get_width_pixels(irImage),
+			k4a_image_get_stride_bytes(irImage));
 
-	//}
-	//else throw "Capture irImage failed!";
+	}
+	else throw "Capture irImage failed!";
 
 	uint8_t* colorData = k4a_image_get_buffer(colorImage);
 	//uint8_t* depthData = k4a_image_get_buffer(depthImage);
 	uint16_t* depthData = reinterpret_cast<uint16_t*>(k4a_image_get_buffer(depthImage));
+	uint16_t* irData = reinterpret_cast<uint16_t*>(k4a_image_get_buffer(irImage));
 	std::vector<Pixel> depthTextureBuffer, irTextureBuffer;
 
 	ColorizeDepthImage(depthImage, &KinectAPI::ColorizeDepthToRGB,
@@ -193,16 +194,16 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		CV_16UC1, depthData);
 	cv::Mat colorImg = cv::Mat(k4a_image_get_height_pixels(colorImage),
 		k4a_image_get_width_pixels(colorImage), CV_8UC4, colorData);
-	//cv::Mat irImg = cv::Mat(k4a_image_get_height_pixels(irImage),
-	//	k4a_image_get_width_pixels(irImage), CV_8UC4, irTextureBuffer.data());
+	cv::Mat irImg = cv::Mat(k4a_image_get_height_pixels(irImage),
+		k4a_image_get_width_pixels(irImage), CV_16UC1, irData);
 	depthcolorMat = depthcolorImg.clone();
 	depthMat = depthImg.clone();
 	colorMat = colorImg.clone();
-	//irMat = irImg.clone();
+	irMat = irImg.clone();
 
 	k4a_image_release(depthImage);
 	k4a_image_release(colorImage);
-	//k4a_image_release(irImage);
+	k4a_image_release(irImage);
 	k4a_capture_release(capture);
 }
 k4a::Pixel  k4a::KinectAPI::ColorizeDepthToRGB(const DepthPixel& depthPixel,
