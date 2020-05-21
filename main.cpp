@@ -1,5 +1,6 @@
 #include <vector>
 #include <stdio.h>
+#include<string>
 #include <stdlib.h>
 #include <iostream>
 #include <k4a/k4a.h>
@@ -14,7 +15,6 @@
 #include<ctime>
 #include"Function_SHUJING.h"
 
-k4a::KinectAPI kinect;
 cv::Mat depthCameraMatrix, depthDisCoeffs;
 Object ObjectRes[10];
 
@@ -22,40 +22,60 @@ Object ObjectRes[10];
 void DrawCenterPoints(cv::Mat& colorMat);
 //测试GetXYZAtCameraView函数
 void TestGetXYZAtCameraView();
+k4a::KinectAPI kinect;
 int main()
 {
 	
 	try {
 		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud < pcl::PointXYZRGB>());
-		k4a::KinectAPI kinect;
 		//opencv图像
-		int img_cnt = 50;
+		int img_cnt = 100;
+		int real_cnt = 0;
 		for(int i = 0; i < img_cnt; i++)
 		{
-			printf("第%d张图片\n", i);
-			system("pause");
+			printf("第%d张图片\n", real_cnt);
 			cv::Mat depthMat, colorMat, depthcolorMat;
 			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat);
 
-			for(int x = 400; x <410; x ++)
-				for (int y = 600; y <610;y++)
-					std::cout << (depthMat.at<UINT16>(x, y))<<" ";
-			cout << endl;
-			cout << "finished ori" << endl;
+			//for(int x = 400; x <410; x ++)
+			//	for (int y = 600; y <610;y++)
+			//		std::cout << (depthMat.at<UINT16>(x, y))<<" ";
+			//cout << endl;
+			//cout << "finished ori" << endl;
 
 			kinect.ShowOpenCVImage(colorMat, "color");
-			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-			std::string name = "imgs/img" + std::to_string(i);
-		//	cv::imwrite(name+"_depth.png", depthMat);
-		//	cv::imwrite(name+"_depthcolor.png", depthcolorMat);
-		//	cv::imwrite(name+"_color.png", colorMat);
+			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			while (1)
+			{
+				printf("是否保存图片？输入y或者n\n");
+				string key;
+				getline(cin, key);
 
-			cv::Mat img = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
-			cout << "after read:" << endl;
-			for(int x = 400; x <410; x ++)
-				for (int y = 600; y <610;y++)
-					std::cout << (img.at<UINT16>(x, y)) << " ";
-			cout << endl;
+				if (key == "y") {}
+				else if (key == "n") 
+				{ 
+					printf("图片未保存，按任意键继续拍照\n");
+					system("pause");
+					break; 
+				}
+				else { continue; }
+
+				std::string name = "imgs/img" + std::to_string(real_cnt);
+				cv::imwrite(name + "_depth.png", depthMat);
+				cv::imwrite(name + "_depthcolor.png", depthcolorMat);
+				cv::imwrite(name + "_color.png", colorMat);
+				real_cnt++;
+				printf("第%d张图片保存成功，按任意键继续拍照\n", real_cnt);
+				system("pause");
+				break;
+			}
+
+			//cv::Mat img = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
+			//cout << "after read:" << endl;
+			//for(int x = 400; x <410; x ++)
+			//	for (int y = 600; y <610;y++)
+			//		std::cout << (img.at<UINT16>(x, y)) << " ";
+			//cout << endl;
 		}
 
 	//	//转化为点云
