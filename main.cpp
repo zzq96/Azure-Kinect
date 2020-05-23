@@ -23,7 +23,7 @@ void DrawCenterPoints(cv::Mat& colorMat);
 //测试GetXYZAtCameraView函数
 void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
-int main1()
+int main()
 {
 	
 	try {
@@ -36,15 +36,21 @@ int main1()
 			printf("第%d张图片\n", real_cnt);
 			cv::Mat depthMat, colorMat, depthcolorMat ,irMat, ircolorMat;
 			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, FALSE);
+			//cv::Mat irMat_ = irMat.clone();
 
-			//for(int x = 400; x <410; x ++)
-			//	for (int y = 600; y <610;y++)
-			//		std::cout << (depthMat.at<UINT16>(x, y))<<" ";
+			//for(int x = 0; x < irMat.rows; x ++)
+			//	for (int y = 0; y < irMat.cols; y++)
+			//	{
+			//		irMat_.at<UINT16>(x, y) /= 5;
+			//		cout << irMat_.at<UINT16>(x, y) << endl;
+			//	}
+
 			//cout << endl;
 			//cout << "finished ori" << endl;
 
 			kinect.ShowOpenCVImage(colorMat, "color");
-			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			//kinect.ShowOpenCVImage(irMat_, "ir");
 			while (1)
 			{
 				printf("是否保存图片？输入y或者n\n");
@@ -59,8 +65,11 @@ int main1()
 					break; 
 				}
 				else { continue; }
-
-				std::string name = "imgs/img" + std::to_string(real_cnt);
+				std::string name;
+				if(real_cnt < 10)
+					name = "imgs/img0" + std::to_string(real_cnt);
+				else 
+					name = "imgs/img" + std::to_string(real_cnt);
 				cv::imwrite(name + "_depth.png", depthMat);
 				cv::imwrite(name + "_depthcolor.png", depthcolorMat);
 				cv::imwrite(name + "_color.png", colorMat);
@@ -113,7 +122,7 @@ int main1()
 	}
     return 0;
 }
-int main()
+int main1()
 {
 	for (int i = 0; i < 50; i++)
 	{
