@@ -60,14 +60,14 @@ int ObjectLocation(cv::Mat cameraParameters, UINT16* DepthFrameData, int iDistan
 		}
 	}
 
-	const int DEPTH = 1500;//相机距离桌面的高度
+	const int DEPTH = 1280;//相机距离桌面的高度
 	int i, j, k;
 	int iCen = 0;
 	int iHis[256];
-	float fx = cameraParameters.at<float>(0, 0);
-	float fy = cameraParameters.at<float>(1, 1);
-	float cx = cameraParameters.at<float>(0, 2);
-	float cy = cameraParameters.at<float>(1, 2);
+	float fx = cameraParameters.at<double>(0, 0);
+	float fy = cameraParameters.at<double>(1, 1);
+	float cx = cameraParameters.at<double>(0, 2);
+	float cy = cameraParameters.at<double>(1, 2);
 	//处理二值化图
 	BYTE* image_t1; //深度数据
 	image_t1 = (BYTE*)malloc(1000 * 1000 * sizeof(BYTE));

@@ -53,16 +53,16 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 		else
 		{
 			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
 
 			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
 
 			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
 		}
 		p = 2 * abs(dy) - abs(dx);
 		for (i = min(x1, x2); i < max(x1, x2); i++)
@@ -82,16 +82,16 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 			if (x< 0 || x+2 > lwidth || y < 0 || y+2> lheight)
 					continue;
 			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
 
 			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
 
 			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
 		}
 	}
 	else {
@@ -111,16 +111,16 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 		else
 		{
 			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
 
 			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
 
 			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
 		}
 		p = 2 * abs(dx) - abs(dy);
 		for (i = min(y1, y2); i < max(y1, y2); i++)
@@ -139,16 +139,16 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 			if (x< 0 || x+2 > lwidth || y < 0 || y+2> lheight)
 				continue;
 			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
 
 			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 255;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
 
 			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 255;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
 		}
 	}
 

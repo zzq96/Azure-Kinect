@@ -16,9 +16,41 @@
 #include <fstream>
 #include"Function_SHUJING.h"
 
-cv::Mat depthCameraMatrix, depthDisCoeffs;
+const double PI = 3.1415926;
+cv::Mat depthMatOld, depthMat, colorMat, depthcolorMat,  depthcolorMatOld, irMat, ircolorMat;
 Object ObjectRes[10];
+cv::Mat depthCameraMatrix, depthDistCoeffs;
+cv::Mat R_cam2base, t_cam2base;
+bool shang = TRUE;
+bool compare(Object a, Object b)
+{
+	double ay = (a.R[0].y + a.R[1].y + a.R[2].y + a.R[3].y)/4;
+	double by = (b.R[0].y + b.R[1].y + b.R[2].y + b.R[3].y)/4;
+	if (shang == TRUE)
+	{
+		double ay = -1000000, by = -100000;
+		ay = min(a.R[0].y, min(a.R[1].y, min(a.R[2].y, a.R[3].y)));
+		by = min(b.R[0].y, min(b.R[1].y, min(b.R[2].y, b.R[3].y)));
 
+		if (ay > 288)
+			return FALSE;
+		if (by > 288)
+			return TRUE;
+		return ay < by;
+	}
+	else
+	{
+		double ax = -1000000, bx = -100000;
+		ax = max(a.R[0].x, max(a.R[1].x, max(a.R[2].x, a.R[3].x)));
+		bx = max(b.R[0].x, max(b.R[1].x, max(b.R[2].x, b.R[3].x)));
+
+		if (ay < 288)
+			return FALSE;
+		if (by < 288)
+			return TRUE;
+		return ax < bx;
+	}
+}
 void HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 {
 	//Mat R_HomoMtr = HomoMtr(Rect(0, 0, 3, 3)); //注意Rect取值
@@ -32,6 +64,61 @@ void HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 	R = HomoMtr(R_rect);
 	T = HomoMtr(T_rect);
 
+}
+void calPoint3D(cv::Mat point2D, cv::Point3f & real)
+{
+	UINT16 Zc = depthMat.at<UINT16>(point2D.at<double>(1, 0), point2D.at<double>(0, 0));
+	cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
+	real.x = point3D.at<double>(0, 0);
+	real.y = point3D.at<double>(1, 0);
+	real.z = point3D.at<double>(2, 0);
+}
+/*不考虑z轴*/
+float getDistance(cv::Point3f a, cv::Point3f b)
+{
+	return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+}
+float calAngle(const vector<Point>& R)
+{
+	cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
+	point2D.at<double>(2, 0) = 1;
+	cv::Mat point3D(3, 1, CV_64F, cv::Scalar(0));
+	cv::Point3f a, b, c;//长方形三个顶点的真实坐标
+	point2D.at<double>(0, 0) = R[0].x;
+	point2D.at<double>(1, 0) = R[0].y;
+	calPoint3D(point2D, a);
+	point2D.at<double>(0, 0) = R[1].x;
+	point2D.at<double>(1, 0) = R[1].y;
+	calPoint3D(point2D, b);
+	point2D.at<double>(0, 0) = R[2].x;
+	point2D.at<double>(1, 0) = R[2].y;
+	calPoint3D(point2D, c);
+	float angle;
+	if(getDistance(a, b) > getDistance(b, c))
+	{
+		if (abs(a.x - b.x) < 50)
+		{
+			angle = 90;
+		}
+		else 
+		{
+			float k = (a.y - b.y) / (a.x - b.x);
+			angle = (tanh(k) / PI * 180);
+		}
+	}
+	else
+	{
+		if (abs(b.x - c.x) < 50)
+		{
+			angle = 90;
+		}
+		else 
+		{
+			float k = (b.y - c.y) / (b.x - c.x);
+			angle = (tanh(k) / PI * 180);
+		}
+	}
+	return angle;
 }
 //把中心点涂黑，方便找到桌面上的（0,0）点
 void DrawCenterPoints(cv::Mat& colorMat);
@@ -64,7 +151,7 @@ int main1()
 			//cout << "finished ori" << endl;
 
 			kinect.ShowOpenCVImage(colorMat, "color");
-			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 			//kinect.ShowOpenCVImage(irMat_, "ir");
 			while (1)
 			{
@@ -142,13 +229,132 @@ int main()
 	string caliberation_camera_file = "caliberation_camera.xml";
 	string Homo_cam2base_file = "Homo_cam2base.xml";
 	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
-	cv::Mat depthCameraMatrix, depthDistCoeffs;
 	fs["cameraMatrix"] >> depthCameraMatrix;
 	fs["distCoeffs"]>> depthDistCoeffs;
+	cout << "depthCameraMatrix" << depthCameraMatrix << endl;
+	cout << "disCoeffs" << depthDistCoeffs << endl;
 	fs.release();
 	cv::FileStorage fs2(Homo_cam2base_file, cv::FileStorage::READ); //读取相机与基座的转化关系XML文件  
 	cv::Mat Homo_cam2base;
 	fs2["Homo_cam2base"] >> Homo_cam2base;
+	cout << "Homo_cam2base" << Homo_cam2base << endl;
+	/*为什么要求逆？*/
+	Homo_cam2base = Homo_cam2base.inv();
+	fs2.release();
+	/*讲单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
+	HomogeneousMtr2RT(Homo_cam2base, R_cam2base, t_cam2base);
+
+
+	while(1)
+	{ 
+		for (int i = 0; i < 3; i++)
+		{
+			kinect.GetOpenCVImage(colorMat, depthMatOld, depthcolorMatOld, irMat, FALSE);
+			//kinect.ShowOpenCVImage(depthcolorMatOld, "old");
+			/*根据内参和畸变系数校正图像*/
+			undistort(depthMatOld,depthMat,depthCameraMatrix,depthDistCoeffs);  
+			undistort(depthcolorMatOld,depthcolorMat,depthCameraMatrix,depthDistCoeffs);  
+			cv::Mat depthMatRevise = depthMat.clone();
+			int iDistance = 1260;//相机到桌面的距离
+			cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
+			cv::Mat point3D;
+			cv::Mat depthCameraMatrixInv = depthCameraMatrix.inv();
+
+			for(int h = 0; h < 360; h++)
+				for (int w = 200; w < 472; w++)
+				if(depthMatRevise.at<UINT16>(h, w) != 0){
+					point2D.at<double>(0, 0) = w;
+					point2D.at<double>(1, 0) = h;
+					point2D.at<double>(2, 0) = 1;
+					point3D = R_cam2base.t() * (depthCameraMatrixInv * depthMatRevise.at<UINT16>(h, w) * point2D - t_cam2base);
+					depthMatRevise.at<UINT16>(h, w) = iDistance - point3D.at<double>(2, 0);
+
+				}
+			//DrawCenterPoints(depthcolorMat);
+			//kinect.ShowOpenCVImage(depthcolorMat, "new");
+
+
+			//for (int h = 0; h < 150; h++)
+			//	for (int w = 0; w < 600; w++)
+			//	{
+			//		depthMat.at<UINT16>(h, w) += 50;
+			//		//depthcolorMat.at<cv::Vec4b>(h, w)[0] = 0;
+			//		//depthcolorMat.at<cv::Vec4b>(h, w)[1] = 0;
+			//		//depthcolorMat.at<cv::Vec4b>(h, w)[2] = 0;
+			//	}
+			//把机械臂部分深度设为0，这样就不会检测到机械臂了
+			for (int h = 0; h < 250; h++)
+				for (int w = 0; w < 250; w++)
+				{
+					depthMatRevise.at<UINT16>(h, w) = 0;
+					//depthcolorMat.at<cv::Vec4b>(h, w)[0] = 0;
+					//depthcolorMat.at<cv::Vec4b>(h, w)[1] = 0;
+					//depthcolorMat.at<cv::Vec4b>(h, w)[2] = 0;
+				}
+			
+			//kinect.ShowOpenCVImage(colorMat, "img_color");
+			int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMatRevise.data, iDistance, depthMatRevise.cols, depthMatRevise.rows,0, depthMatRevise.rows, ObjectRes);
+			sort(ObjectRes, ObjectRes + iObj_num, compare);
+			cout << "iObj_num:"<<iObj_num << endl;
+			for (int i = 0; i < iObj_num; i++)
+			{
+				//if(i == 0)
+				Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+				float angle = calAngle(ObjectRes[i].R);
+				float x=0, y=0;
+				for (int j = 0; j < 4; j++)
+				{
+					x += ObjectRes[i].R[j].x;
+					y += ObjectRes[i].R[j].y;
+				}
+				x /= 4, y /= 4;
+				/*齐次坐标*/
+				point2D.at<double>(0, 0) = x;
+				point2D.at<double>(1, 0) = y;
+				point2D.at<double>(2, 0) = 1;
+				/*平均周围深度，减少误差*/
+				double Zc = (depthMat.at<UINT16>(y, x)
+					+depthMat.at<UINT16>(y+5, x)
+					+depthMat.at<UINT16>(y-5, x)
+					+depthMat.at<UINT16>(y, x-5)
+					+depthMat.at<UINT16>(y, x+5)
+					)/5;
+				//cout << R_cam2base.type() << depth+ depthMat.at<UINT16>(y - 5, x + 5)CameraMatrix.type() << point2D.type() << t_cam2base.type() << endl;
+				depthCameraMatrix.convertTo(depthCameraMatrix, CV_64F);
+
+				cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
+				//cout << R_cam2base.t() << endl;
+				//cout << depthCameraMatrix.inv() << endl;
+				//cout << point2D << endl;
+				//cout << t_cam2base << endl;
+				//cout << depthCameraMatrix.inv() * Zc << endl;
+				//cout << depthCameraMatrix.inv() * Zc * point2D << endl;
+				//cout << (depthCameraMatrix.inv() * Zc * point2D - t_cam2base) << endl;
+				cout << "坐标为:" << endl;
+				cout << point3D << endl;
+				cout << "角度为" << endl;
+				cout << angle << endl;
+			}
+				kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+		}
+	}
+return 0;
+}
+int mainold()
+{
+	string caliberation_camera_file = "caliberation_camera.xml";
+	string Homo_cam2base_file = "Homo_cam2base.xml";
+	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
+	cv::Mat depthCameraMatrix, depthDistCoeffs;
+	fs["cameraMatrix"] >> depthCameraMatrix;
+	fs["distCoeffs"]>> depthDistCoeffs;
+	cout << "depthCameraMatrix" << depthCameraMatrix << endl;
+	cout << "disCoeffs" << depthDistCoeffs << endl;
+	fs.release();
+	cv::FileStorage fs2(Homo_cam2base_file, cv::FileStorage::READ); //读取相机与基座的转化关系XML文件  
+	cv::Mat Homo_cam2base;
+	fs2["Homo_cam2base"] >> Homo_cam2base;
+	cout << "Homo_cam2base" << Homo_cam2base << endl;
 	Homo_cam2base = Homo_cam2base.inv();
 	fs2.release();
 	/*讲单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
@@ -156,92 +362,107 @@ int main()
 	HomogeneousMtr2RT(Homo_cam2base, R_cam2base, t_cam2base);
 
 
-	for (int i = 0; i < 50; i++)
-	{
-		cv::Mat depthMatOld, depthMat, colorMat, depthcolorMat,  depthcolorMatOld, irMat, ircolorMat;
-		kinect.GetOpenCVImage(colorMat, depthMatOld, depthcolorMatOld, irMat, FALSE);
-		kinect.ShowOpenCVImage(depthcolorMatOld, "old");
-
-		/*根据内参和畸变系数校正图像*/
-		//cv::Size image_size;
-		//cv::Mat mapx = cv::Mat(image_size, CV_32FC1);
-		//cv::Mat mapy = cv::Mat(image_size, CV_32FC1);
-		//cv::Mat R = cv::Mat::eye(3, 3, CV_32F);
-		//cout << "保存矫正图像" << endl;
-		//initUndistortRectifyMap(depthCameraMatrix, depthDisCoeffs, R, depthCameraMatrix, image_size, CV_32FC1, mapx, mapy);
-		undistort(depthMatOld,depthMat,depthCameraMatrix,depthDistCoeffs);  
-		undistort(depthcolorMatOld,depthcolorMat,depthCameraMatrix,depthDistCoeffs);  
-		kinect.ShowOpenCVImage(depthcolorMat, "new");
-
-
-		//把机械臂部分深度设为0，这样就不会检测到机械臂了
-		for (int h = 0; h < 250; h++)
-			for (int w = 0; w < 300; w++)
-			{
-				depthMat.at<UINT16>(h, w) = 0;
-				depthcolorMat.at<cv::Vec4b>(h, w)[0] = 0;
-				depthcolorMat.at<cv::Vec4b>(h, w)[1] = 0;
-				depthcolorMat.at<cv::Vec4b>(h, w)[2] = 0;
-			}
-		
-		kinect.ShowOpenCVImage(colorMat, "img_color");
-		//
-		float robot_x = 336.931, robot_y = 394.312, robot_z = 114.206, robot_len = 215;
-		kinect.GetIntrinsicParam(depthCameraMatrix, depthDisCoeffs, "depth");
-		int iDistance = 1200;
-		int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMat.data, iDistance, depthMat.cols, depthMat.rows,0, depthMat.rows, ObjectRes);
-		cout << "iObj_num:"<<iObj_num << endl;
-		for (int i = 0; i < iObj_num; i++)
+	while(1)
+	{ 
+		cout << "shang" << shang << endl;
+		for (int i = 0; i < 3; i++)
 		{
-			Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
-			float x=0, y=0;
-			for (int j = 0; j < 4; j++)
+			cv::Mat depthMatOld, depthMat, colorMat, depthcolorMat,  depthcolorMatOld, irMat, ircolorMat;
+			kinect.GetOpenCVImage(colorMat, depthMatOld, depthcolorMatOld, irMat, FALSE);
+			//kinect.ShowOpenCVImage(depthcolorMatOld, "old");
+			/*根据内参和畸变系数校正图像*/
+			//cv::Size image_size;
+			//cv::Mat mapx = cv::Mat(image_size, CV_32FC1);
+			//cv::Mat mapy = cv::Mat(image_size, CV_32FC1);
+			//cv::Mat R = cv::Mat::eye(3, 3, CV_32F);
+			//cout << "保存矫正图像" << endl;
+			//initUndistortRectifyMap(depthCameraMatrix, depthDisCoeffs, R, depthCameraMatrix, image_size, CV_32FC1, mapx, mapy);
+			undistort(depthMatOld,depthMat,depthCameraMatrix,depthDistCoeffs);  
+			undistort(depthcolorMatOld,depthcolorMat,depthCameraMatrix,depthDistCoeffs);  
+			DrawCenterPoints(depthcolorMat);
+			//kinect.ShowOpenCVImage(depthcolorMat, "new");
+
+
+			//把机械臂部分深度设为0，这样就不会检测到机械臂了
+			for (int h = 0; h < 250; h++)
+				for (int w = 0; w < 250; w++)
+				{
+					depthMat.at<UINT16>(h, w) = 0;
+					//depthcolorMat.at<cv::Vec4b>(h, w)[0] = 0;
+					//depthcolorMat.at<cv::Vec4b>(h, w)[1] = 0;
+					//depthcolorMat.at<cv::Vec4b>(h, w)[2] = 0;
+				}
+			
+			//kinect.ShowOpenCVImage(colorMat, "img_color");
+			//
+			float robot_x = 411.984, robot_y = 348.392, robot_z = 114.206, robot_len = 215;
+			kinect.GetIntrinsicParam(depthCameraMatrix, depthDistCoeffs, "depth");
+			int iDistance = 1320;
+			int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMat.data, iDistance, depthMat.cols, depthMat.rows,0, depthMat.rows, ObjectRes);
+			sort(ObjectRes, ObjectRes + iObj_num, compare);
+			cout << "iObj_num:"<<iObj_num << endl;
+			for (int i = 0; i < iObj_num; i++)
 			{
-				x += ObjectRes[i].R[j].x;
-				y += ObjectRes[i].R[j].y;
+				if(i == 0)
+				Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+				float x=0, y=0;
+				for (int j = 0; j < 4; j++)
+				{
+					x += ObjectRes[i].R[j].x;
+					y += ObjectRes[i].R[j].y;
+				}
+				x /= 4, y /= 4;
+				///*齐次坐标*/
+				//cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
+				//point2D.at<double>(0, 0) = x;
+				//point2D.at<double>(1, 0) = y;
+				//point2D.at<double>(2, 0) = 1;
+				///*平均周围深度，减少误差*/
+				//double Zc = depthMat.at<UINT16>(y, x);
+				////cout << R_cam2base.type() << depth+ depthMat.at<UINT16>(y - 5, x + 5)CameraMatrix.type() << point2D.type() << t_cam2base.type() << endl;
+				//depthCameraMatrix.convertTo(depthCameraMatrix, CV_64F);
+
+				//cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
+				//cout << R_cam2base.t() << endl;
+				//cout << depthCameraMatrix.inv() << endl;
+				//cout << point2D << endl;
+				//cout << t_cam2base << endl;
+				//cout << depthCameraMatrix.inv() * Zc << endl;
+				//cout << depthCameraMatrix.inv() * Zc * point2D << endl;
+				//cout << (depthCameraMatrix.inv() * Zc * point2D - t_cam2base) << endl;
+				//cout << "坐标为:" << endl;
+				//cout << point3D << endl;
+
+				//kinect.GetXYZAtCameraView(point2D, img_depth.at<UINT16>(point2D.x, point2D.y), point3D);
+
+				//机械臂基座坐标系和相机坐标系xy轴是对调的。
+				cv::Point3f Point3D;
+				Point3D.x = x;
+				Point3D.y = y;
+				Point3D.z = (depthMat.at<UINT16>(y, x)
+					+depthMat.at<UINT16>(y+5, x)
+					+depthMat.at<UINT16>(y-5, x)
+					+depthMat.at<UINT16>(y, x-5)
+					+depthMat.at<UINT16>(y, x+5)
+					)/5;
+				
+				Point3D.z = 1320 - Point3D.z;
+				Point3D.x -= 320;
+				Point3D.y -= 288;
+				//Point3D.x /= depthCameraMatrix.at<float>(0, 0) ;
+				//Point3D.y /= depthCameraMatrix.at<float>(1, 1) ;
+
+				swap(Point3D.x, Point3D.y);
+				//cout << "pixel:"<<x << " " << y << endl;
+				Point3D.x += robot_x;
+				Point3D.y += robot_y;
+				Point3D.z += -robot_z + robot_len;
+				cout <<"real_robot:"<< "x:" << Point3D.x << " " << "y:" << Point3D.y << " " << "z:" << Point3D.z << endl;
 			}
-			x /= 4, y /= 4;
-			/*齐次坐标*/
-			cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
-			point2D.at<double>(0, 0) = x;
-			point2D.at<double>(1, 0) = y;
-			point2D.at<double>(2, 0) = 1;
-			/*平均周围深度，减少误差*/
-			double Zc = (depthMat.at<UINT16>(y, x) + depthMat.at<UINT16>(y + 5, x + 5)
-				+ depthMat.at<UINT16>(y - 5, x - 5)
-				+ depthMat.at<UINT16>(y + 5, x - 5)
-				+ depthMat.at<UINT16>(y - 5, x + 5)) / 5;
-
-			//cout << R_cam2base.type() << depthCameraMatrix.type() << point2D.type() << t_cam2base.type() << endl;
-			depthCameraMatrix.convertTo(depthCameraMatrix, CV_64F);
-
-			cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
-			cout << R_cam2base.t() << endl;
-			cout << depthCameraMatrix.inv() << endl;
-			cout << point2D << endl;
-			cout << t_cam2base << endl;
-			cout << depthCameraMatrix.inv() * Zc << endl;
-			cout << depthCameraMatrix.inv() * Zc * point2D << endl;
-			cout << (depthCameraMatrix.inv() * Zc * point2D - t_cam2base) << endl;
-			cout << "坐标为:" << endl;
-			cout << point3D << endl;
-
-			//kinect.GetXYZAtCameraView(point2D, img_depth.at<UINT16>(point2D.x, point2D.y), point3D);
-
-			////机械臂基座坐标系和相机坐标系xy轴是对调的。
-			//swap(point3D.x, point3D.y);
-			//point3D.z = 1310 - point3D.z;
-
-			//cout << "pixel:"<<x << " " << y << endl;
-			//point3D.x += robot_x;
-			//point3D.y += robot_y;
-			//point3D.z += -robot_z + robot_len;
-			//cout <<"real_robot:"<< "x:" << point3D.x << " " << "y:" << point3D.y << " " << "z:" << point3D.z << endl;
-
+				kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 		}
-		kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+		shang = !shang;
 	}
-	
 return 0;
 }
 
@@ -283,18 +504,18 @@ void TestGetXYZAtCameraView()
 }
 void DrawCenterPoints(cv::Mat& colorMat)
 {
-	colorMat.at<cv::Vec4b>(360, 640)[0] = 0;
-	colorMat.at<cv::Vec4b>(360, 640)[1] = 0;
-	colorMat.at<cv::Vec4b>(360, 640)[2] = 0;
-	colorMat.at<cv::Vec4b>(360, 641)[0] = 0;
-	colorMat.at<cv::Vec4b>(360, 641)[1] = 0;
-	colorMat.at<cv::Vec4b>(360, 641)[2] = 0;
-	colorMat.at<cv::Vec4b>(360, 639)[0] = 0;
-	colorMat.at<cv::Vec4b>(360, 639)[1] = 0;
-	colorMat.at<cv::Vec4b>(360, 639)[2] = 0;
-	colorMat.at<cv::Vec4b>(361, 640)[3]= 0;
-	colorMat.at<cv::Vec4b>(359, 640)[0] = 0;
-	colorMat.at<cv::Vec4b>(359, 640)[1] = 0;
-	colorMat.at<cv::Vec4b>(359, 640)[2] = 0;
+	colorMat.at<cv::Vec4b>(288, 320)[0] = 0;
+	colorMat.at<cv::Vec4b>(288, 320)[1] = 0;
+	colorMat.at<cv::Vec4b>(288, 320)[2] = 0;
+	colorMat.at<cv::Vec4b>(288, 321)[0] = 0;
+	colorMat.at<cv::Vec4b>(288, 321)[1] = 0;
+	colorMat.at<cv::Vec4b>(288, 321)[2] = 0;
+	colorMat.at<cv::Vec4b>(288, 319)[0] = 0;
+	colorMat.at<cv::Vec4b>(288, 319)[1] = 0;
+	colorMat.at<cv::Vec4b>(288, 319)[2] = 0;
+	colorMat.at<cv::Vec4b>(289, 320)[3]= 0;
+	colorMat.at<cv::Vec4b>(289, 320)[0] = 0;
+	colorMat.at<cv::Vec4b>(289, 320)[1] = 0;
+	colorMat.at<cv::Vec4b>(289, 320)[2] = 0;
 }
 
