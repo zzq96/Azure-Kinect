@@ -1,3 +1,4 @@
+#include <winsock2.h>
 #include <vector>
 #include <stdio.h>
 #include<string>
@@ -15,6 +16,7 @@
 #include<ctime>
 #include <fstream>
 #include"Function_SHUJING.h"
+#include"SocketRobot.h"
 
 const double PI = 3.1415926;
 cv::Mat depthMatOld, depthMat, colorMat, depthcolorMat,  depthcolorMatOld, irMat, ircolorMat;
@@ -230,7 +232,7 @@ int main()
 	string Homo_cam2base_file = "Homo_cam2base.xml";
 	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
 	fs["cameraMatrix"] >> depthCameraMatrix;
-	fs["distCoeffs"]>> depthDistCoeffs;
+	fs["distCoeffs"] >> depthDistCoeffs;
 	cout << "depthCameraMatrix" << depthCameraMatrix << endl;
 	cout << "disCoeffs" << depthDistCoeffs << endl;
 	fs.release();
@@ -244,10 +246,14 @@ int main()
 	/*讲单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
 	HomogeneousMtr2RT(Homo_cam2base, R_cam2base, t_cam2base);
 
+	SocketRobot* sr = new SocketRobot();
+	cout << "按任意键开始" << endl;
+	system("pause");
+	Sleep(2000);
+
 
 	while(1)
 	{ 
-		for (int i = 0; i < 3; i++)
 		{
 			kinect.GetOpenCVImage(colorMat, depthMatOld, depthcolorMatOld, irMat, FALSE);
 			//kinect.ShowOpenCVImage(depthcolorMatOld, "old");
@@ -268,7 +274,6 @@ int main()
 					point2D.at<double>(2, 0) = 1;
 					point3D = R_cam2base.t() * (depthCameraMatrixInv * depthMatRevise.at<UINT16>(h, w) * point2D - t_cam2base);
 					depthMatRevise.at<UINT16>(h, w) = iDistance - point3D.at<double>(2, 0);
-
 				}
 			//DrawCenterPoints(depthcolorMat);
 			//kinect.ShowOpenCVImage(depthcolorMat, "new");
@@ -294,12 +299,19 @@ int main()
 			
 			//kinect.ShowOpenCVImage(colorMat, "img_color");
 			int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMatRevise.data, iDistance, depthMatRevise.cols, depthMatRevise.rows,0, depthMatRevise.rows, ObjectRes);
-			sort(ObjectRes, ObjectRes + iObj_num, compare);
-			cout << "iObj_num:"<<iObj_num << endl;
+			std::sort(ObjectRes, ObjectRes + iObj_num, compare);
+			//cout << "iObj_num:"<<iObj_num << endl;
+			if (iObj_num == 0)
+			{
+				Sleep(1000);
+				continue;
+			}
 			for (int i = 0; i < iObj_num; i++)
 			{
-				//if(i == 0)
-				Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+				if (i > 0) break;
+				if(i == 0)
+					Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+				kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 				float angle = calAngle(ObjectRes[i].R);
 				float x=0, y=0;
 				for (int j = 0; j < 4; j++)
@@ -334,10 +346,25 @@ int main()
 				cout << point3D << endl;
 				cout << "角度为" << endl;
 				cout << angle << endl;
+				
+				float coords[12];
+				coords[0] = point3D.at<double>(0, 0);
+				coords[1] = point3D.at<double>(1, 0);
+				coords[2] = point3D.at<double>(2, 0) - 2;
+				coords[3] = angle;
+				coords[4] = 0;
+				coords[5] = 0;
+				coords[6] = 698;
+				coords[7] = 342;
+				coords[8] = coords[2] - 50;
+				coords[9] = 90;
+				coords[10] = 0;
+				coords[11] = 0;
+				sr->moveRobot(coords);
 			}
-				kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 		}
 	}
+	sr->close();
 return 0;
 }
 int mainold()
@@ -399,7 +426,7 @@ int mainold()
 			kinect.GetIntrinsicParam(depthCameraMatrix, depthDistCoeffs, "depth");
 			int iDistance = 1320;
 			int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMat.data, iDistance, depthMat.cols, depthMat.rows,0, depthMat.rows, ObjectRes);
-			sort(ObjectRes, ObjectRes + iObj_num, compare);
+			std::sort(ObjectRes, ObjectRes + iObj_num, compare);
 			cout << "iObj_num:"<<iObj_num << endl;
 			for (int i = 0; i < iObj_num; i++)
 			{

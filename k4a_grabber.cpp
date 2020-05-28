@@ -113,8 +113,8 @@ void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name)
 
 	cv::namedWindow("name", CV_WINDOW_NORMAL);  
 	cv::imshow("name", Img);
-	cv::waitKey(0);
-	cv::destroyAllWindows();
+	//cv::waitKey(0);
+	//cv::destroyAllWindows();
 }
 //depth已转到RGB相机视角
 void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color)
