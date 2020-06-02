@@ -27,7 +27,7 @@ public:
 	//colorMat is a color image in 8UC4 format belonging to RGBA
 	//depthMat is a depth image in 16UC1 format, 每个元素表示物体在相机视角下的深度，单位mm
 	//depthcolor is a pseudo-color image in 8UC4，将深度图转化为伪彩色图像以便可视化
-	void GetOpenCVImage(cv::Mat &colorMat, cv::Mat &depthMat, cv::Mat& depthcolorMat);
+	void GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color);
 	void ShowOpenCVImage(cv::Mat Img, std::string name);
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
 
@@ -43,7 +43,7 @@ public:
 	//TODO(zzq):相机坐标系下的xyz值
 	//得到相机坐标系下的xyz值
 	//输入图像上的像素坐标，输出相机坐标系下的xyz值
-	void GetXYZAtViewOfCamera(const cv::Point2i coord, cv::Point3f &coord3D);
+	void GetXYZAtCameraView(const cv::Point2i point2D, float depth, cv::Point3f &point3D);
 	//用完相机后，将相机资源释放。
 	void ReleaseDevice();
 

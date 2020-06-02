@@ -10,7 +10,6 @@ TIME:2019-05-17
 #include <time.h>
 #include <stdlib.h>
 #include "Function_SHUJING.h"
-#include "PicoZense_api2.h"
 #include "ConComponent.h"
 
 
@@ -30,15 +29,45 @@ void Image_Binary(unsigned char* image, int wid, int hei)
 
 }
 
-int ObjectLocation(PsCameraParameters cameraParameters, PsDepthPixel * DepthFrameData, BYTE* DepthImage, int iDistance, int iWid, int iHei, int iTop, int iBottom, Object* ObjectRes)
+int ObjectLocation(cv::Mat cameraParameters, UINT16* DepthFrameData, int iDistance, int iWid, int iHei, int iTop, int iBottom, Object* ObjectRes)
 {
+	BYTE* DepthImage = (BYTE*)malloc(iWid * iHei * sizeof(BYTE));
+	int cnt = 0;
+	if (DepthFrameData != NULL)
+	{
+		//Read the depthFrameData in uint_16
+		int wid_depth = iWid;
+		int hei_depth = iHei;
+		memset(DepthImage, 0, hei_depth * wid_depth); //深度信息转灰度原图
+		for (int i = 0; i < hei_depth; i++)//对于在皮带范围内的图像进行处理
+		{
+			for (int j = 0; j < wid_depth; j++)
+			{
+				//k = 5.3;
+				if (DepthFrameData[i * iWid + j] == 0 || abs(iDistance - DepthFrameData[i * iWid + j]) < 20)//如果深度值丢失或者和皮带高度差不多的部分（认为1300是皮带的高度）
+				{
+					//DepthImage[i*iWid + j] = DepthFrameData[130*iWid + 320] / k;
+					DepthImage[i * iWid + j] = 255;// iDistance / 5.3;// iDistance是皮带高度，对于皮带部分统一画面
+				}
+				else if (iDistance - DepthFrameData[i * iWid + j] < 500 && iDistance - DepthFrameData[i * iWid + j]>0)
+				{	//把皮带内的包裹深度信号转换为灰度值
+					cnt++;
+					DepthImage[i * iWid + j] = 255 - (float)(iDistance - DepthFrameData[i * iWid + j]) / 500 * 255;// / 5.3;//((float)(DepthFrameData[i*iWid + j] - 700)/600)*255;
+				}
+				else
+					DepthImage[i * iWid + j] = 255;
+			}
+		}
+	}
+
+	const int DEPTH = 1280;//相机距离桌面的高度
 	int i, j, k;
 	int iCen = 0;
 	int iHis[256];
-	float fx = cameraParameters.fx;
-	float fy = cameraParameters.fy;
-	float cx = cameraParameters.cx;
-	float cy = cameraParameters.cy;
+	float fx = cameraParameters.at<float>(0, 0);
+	float fy = cameraParameters.at<float>(1, 1);
+	float cx = cameraParameters.at<float>(0, 2);
+	float cy = cameraParameters.at<float>(1, 2);
 	//处理二值化图
 	BYTE* image_t1; //深度数据
 	image_t1 = (BYTE*)malloc(1000 * 1000 * sizeof(BYTE));
@@ -85,10 +114,10 @@ int ObjectLocation(PsCameraParameters cameraParameters, PsDepthPixel * DepthFram
 	memset(miny1, 0, sizeof(int)* 10);
 	memset(maxy1, 0, sizeof(int)* 10);
 	int gao1 = 0;
-	int inum1[1400];
+	int inum1[DEPTH];
 	int inum_all = 0;
 	int iobj_num=0;//检测到的快递数量
-	CodeComponent rescomponent[20]; //连通元
+	static CodeComponent rescomponent[40]; //连通元
 	for (kk = 0; kk < iCen; kk++)
 	{
 		for (int i = 0; i < 20; i++)
@@ -163,16 +192,16 @@ int ObjectLocation(PsCameraParameters cameraParameters, PsDepthPixel * DepthFram
 			//计算物品高度
 			gao1 = 0;			
 			inum_all = 0;
-			memset(inum1, 0, 1400 * sizeof(int));//统计高度
-			for (i = miny; i < maxy; i++)
+			memset(inum1, 0, DEPTH * sizeof(int));//统计高度
+			for (i = max(miny, 0); i < min(maxy, iHei); i++)
 			{
-				for (j = minx; j < maxx; j++)
+				for (j = max(minx, 0); j < min(maxx, iWid); j++)
 				{
-					if (DepthFrameData[iWid*i + j]<1400)
-						inum1[DepthFrameData[iWid*i + j]]++;
+					if (((UINT16*)DepthFrameData)[iWid*i + j]<DEPTH)
+						inum1[((UINT16*)DepthFrameData)[iWid*i + j]]++;
 				}
 			}
-			for (i = 20; i<1400; i++)
+			for (i = 20; i<DEPTH; i++)
 			{
 				inum_all = inum_all + inum1[i];
 				if (inum_all>(maxx - minx)*(maxy - miny) / 5)
@@ -239,6 +268,7 @@ int ObjectLocation(PsCameraParameters cameraParameters, PsDepthPixel * DepthFram
 		
 	}
 	free(image_t1);
+	free(DepthImage);
 	return iobj_num;
 
 }
