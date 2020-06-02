@@ -30,13 +30,13 @@ bool compare(Object a, Object b)
 	double by = (b.R[0].y + b.R[1].y + b.R[2].y + b.R[3].y)/4;
 	if (shang == TRUE)
 	{
-		double ay = -1000000, by = -100000;
-		ay = min(a.R[0].y, min(a.R[1].y, min(a.R[2].y, a.R[3].y)));
-		by = min(b.R[0].y, min(b.R[1].y, min(b.R[2].y, b.R[3].y)));
+		//double ay = -1000000, by = -100000;
+		//ay = min(a.R[0].y, min(a.R[1].y, min(a.R[2].y, a.R[3].y)));
+		//by = min(b.R[0].y, min(b.R[1].y, min(b.R[2].y, b.R[3].y)));
 
-		if (ay > 288)
+		if (ay > 340)
 			return FALSE;
-		if (by > 288)
+		if (by > 340)
 			return TRUE;
 		return ay < by;
 	}
@@ -69,32 +69,50 @@ void HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 }
 void calPoint3D(cv::Mat point2D, cv::Point3f & real)
 {
-	UINT16 Zc = depthMat.at<UINT16>(point2D.at<double>(1, 0), point2D.at<double>(0, 0));
+	//TODO:有bug，如果该点深度为0
+	UINT16 Zc = depthMat.at<UINT16>(point2D.at<float>(1, 0), point2D.at<float>(0, 0));
 	cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
-	real.x = point3D.at<double>(0, 0);
-	real.y = point3D.at<double>(1, 0);
-	real.z = point3D.at<double>(2, 0);
+	real.x = point3D.at<float>(0, 0);
+	real.y = point3D.at<float>(1, 0);
+	real.z = point3D.at<float>(2, 0);
 }
 /*不考虑z轴*/
 float getDistance(cv::Point3f a, cv::Point3f b)
 {
 	return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }
-float calAngle(const vector<Point>& R)
+float calAngle(const vector<Point>& R, int h, int w)
 {
-	cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
-	point2D.at<double>(2, 0) = 1;
-	cv::Mat point3D(3, 1, CV_64F, cv::Scalar(0));
+	cv::Mat point2D(3, 1, CV_32F, cv::Scalar(0));
+	point2D.at<float>(2, 0) = 1;
+	cv::Mat point3D(3, 1, CV_32F, cv::Scalar(0));
 	cv::Point3f a, b, c;//长方形三个顶点的真实坐标
-	point2D.at<double>(0, 0) = R[0].x;
-	point2D.at<double>(1, 0) = R[0].y;
-	calPoint3D(point2D, a);
-	point2D.at<double>(0, 0) = R[1].x;
-	point2D.at<double>(1, 0) = R[1].y;
-	calPoint3D(point2D, b);
-	point2D.at<double>(0, 0) = R[2].x;
-	point2D.at<double>(1, 0) = R[2].y;
-	calPoint3D(point2D, c);
+	/*如果某一个点超出边界，则顺移点。毛想想应该最多只有一个点超出边界*/
+	int k;
+	for (int i = 0; i < R.size(); i++)
+	{
+		k = i;
+		if (R[k].x < 0 || R[k].x >= w || R[k].y < 0 || R[k].y >= h)
+			continue;
+		point2D.at<float>(0, 0) = R[k].x;
+		point2D.at<float>(1, 0) = R[k].y;
+		calPoint3D(point2D, a);
+
+		k = (i + 1) % R.size();
+		if (R[k].x < 0 || R[k].x >= w || R[k].y < 0 || R[k].y >= h)
+			continue;
+		point2D.at<float>(0, 0) = R[k].x;
+		point2D.at<float>(1, 0) = R[k].y;
+		calPoint3D(point2D, b);
+
+		k = (i + 2) % R.size();
+		if (R[k].x < 0 || R[k].x >= w || R[k].y < 0 || R[k].y >= h)
+			continue;
+		point2D.at<float>(0, 0) = R[k].x;
+		point2D.at<float>(1, 0) = R[k].y;
+		calPoint3D(point2D, c);
+		break;
+	}
 	float angle;
 	if(getDistance(a, b) > getDistance(b, c))
 	{
@@ -120,6 +138,12 @@ float calAngle(const vector<Point>& R)
 			angle = (tanh(k) / PI * 180);
 		}
 	}
+	cout << "oldangle" << endl;
+	cout << angle << endl;
+	if (angle > 90)
+		angle -= 180;
+	if (angle < -90)
+		angle += 180;
 	return angle;
 }
 //把中心点涂黑，方便找到桌面上的（0,0）点
@@ -232,6 +256,8 @@ int main()
 	string Homo_cam2base_file = "Homo_cam2base.xml";
 	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
 	fs["cameraMatrix"] >> depthCameraMatrix;
+	depthCameraMatrix.convertTo(depthCameraMatrix, CV_32F);
+	cout << depthCameraMatrix.type() << endl;
 	fs["distCoeffs"] >> depthDistCoeffs;
 	cout << "depthCameraMatrix" << depthCameraMatrix << endl;
 	cout << "disCoeffs" << depthDistCoeffs << endl;
@@ -247,9 +273,9 @@ int main()
 	HomogeneousMtr2RT(Homo_cam2base, R_cam2base, t_cam2base);
 
 	SocketRobot* sr = new SocketRobot();
-	cout << "按任意键开始" << endl;
-	system("pause");
-	Sleep(2000);
+	//cout << "按任意键开始" << endl;
+	//system("pause");
+	//Sleep(2000);
 
 
 	while(1)
@@ -261,20 +287,54 @@ int main()
 			undistort(depthMatOld,depthMat,depthCameraMatrix,depthDistCoeffs);  
 			undistort(depthcolorMatOld,depthcolorMat,depthCameraMatrix,depthDistCoeffs);  
 			cv::Mat depthMatRevise = depthMat.clone();
-			int iDistance = 1260;//相机到桌面的距离
-			cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
+			int iDistance = 1280;//相机到桌面的距离
+			cv::Mat point2D(3, 1, CV_32F, cv::Scalar(0)); 
+			point2D.at<float>(2, 0) = 1;
 			cv::Mat point3D;
 			cv::Mat depthCameraMatrixInv = depthCameraMatrix.inv();
 
-			for(int h = 0; h < 360; h++)
-				for (int w = 200; w < 472; w++)
+			int minh = 0, maxh = 400;
+			int minw = 240, maxw = 482;
+			cv::Mat point2DSet(3, (maxh - minh) * (maxw - minw), CV_32F, cv::Scalar(0));
+			cv::Mat pointDepthSet(3, (maxh - minh) * (maxw - minw), CV_32F, cv::Scalar(0));
+			cv::Mat t_cam2baseSet(3, (maxh - minh) * (maxw - minw), CV_32F, cv::Scalar(0));
+			int tmp = 0;
+			for(int h = minh; h < maxh; h++)
+				for (int w = minw; w < maxw; w++)
 				if(depthMatRevise.at<UINT16>(h, w) != 0){
-					point2D.at<double>(0, 0) = w;
-					point2D.at<double>(1, 0) = h;
-					point2D.at<double>(2, 0) = 1;
-					point3D = R_cam2base.t() * (depthCameraMatrixInv * depthMatRevise.at<UINT16>(h, w) * point2D - t_cam2base);
-					depthMatRevise.at<UINT16>(h, w) = iDistance - point3D.at<double>(2, 0);
+					point2DSet.at<float>(0, tmp) = w;
+					point2DSet.at<float>(1, tmp) = h;
+					point2DSet.at<float>(2, tmp) = 1;
+					pointDepthSet.at<float>(0, tmp) = depthMatRevise.at<UINT16>(h, w);
+					pointDepthSet.at<float>(1, tmp) = depthMatRevise.at<UINT16>(h, w);
+					pointDepthSet.at<float>(2, tmp) = depthMatRevise.at<UINT16>(h, w);
+					t_cam2baseSet.at<float>(0, tmp) = t_cam2base.at<float>(0, 0);
+					t_cam2baseSet.at<float>(1, tmp) = t_cam2base.at<float>(1, 0);
+					t_cam2baseSet.at<float>(2, tmp) = t_cam2base.at<float>(2, 0);
+					tmp++;
 				}
+
+			cv::Mat point3DSet = R_cam2base.t() * ((depthCameraMatrixInv * point2DSet).mul(pointDepthSet) - t_cam2baseSet);
+			cout << point3DSet.type() << endl;
+			tmp = 0;
+			for(int h = minh; h < maxh; h++)
+				for (int w = minw; w < maxw; w++)
+				if(depthMatRevise.at<UINT16>(h, w) != 0){
+					//point3D = R_cam2base.t() * (depthCameraMatrixInv * depthMatRevise.at<UINT16>(h, w) * point2D - t_cam2base);
+					depthMatRevise.at<UINT16>(h, w) = iDistance - point3DSet.at<float>(2, tmp);
+					tmp++;
+				}
+			//cv::Mat dot1 = R_cam2base.t() * depthCameraMatrixInv;
+			//cv::Mat dot2 = R_cam2base.t() * t_cam2base;
+			//for(int h = minh; h < maxh; h++)
+			//	for (int w = minw; w < maxw; w++)
+			//	if(depthMatRevise.at<UINT16>(h, w) != 0){
+			//		point2D.at<float>(0, 0) = w;
+			//		point2D.at<float>(1, 0) = h;
+			//		point3D = dot1 * point2D * depthMatRevise.at<UINT16>(h, w) - dot2;
+			//		//point3D = R_cam2base.t() * (depthCameraMatrixInv * depthMatRevise.at<UINT16>(h, w) * point2D - t_cam2base);
+			//		depthMatRevise.at<UINT16>(h, w) = iDistance - point3D.at<float>(2, 0);
+			//	}
 			//DrawCenterPoints(depthcolorMat);
 			//kinect.ShowOpenCVImage(depthcolorMat, "new");
 
@@ -300,6 +360,18 @@ int main()
 			//kinect.ShowOpenCVImage(colorMat, "img_color");
 			int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMatRevise.data, iDistance, depthMatRevise.cols, depthMatRevise.rows,0, depthMatRevise.rows, ObjectRes);
 			std::sort(ObjectRes, ObjectRes + iObj_num, compare);
+			cout << 1 << endl;
+			for (int i = 0; i < iObj_num; i++)
+			{
+				Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+			}
+			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			if (iObj_num == 0 || (ObjectRes[0].R[0].y + ObjectRes[0].R[1].y + ObjectRes[0].R[2].y + ObjectRes[0].R[3].y) / 4 > 340)
+			{
+				sr->close();
+				cout << "退出" << endl;
+				break;
+			}
 			//cout << "iObj_num:"<<iObj_num << endl;
 			if (iObj_num == 0)
 			{
@@ -311,8 +383,8 @@ int main()
 				if (i > 0) break;
 				if(i == 0)
 					Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
-				kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-				float angle = calAngle(ObjectRes[i].R);
+				//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+				float angle = calAngle(ObjectRes[i].R, depthMat.rows, depthMat.cols);
 				float x=0, y=0;
 				for (int j = 0; j < 4; j++)
 				{
@@ -321,9 +393,9 @@ int main()
 				}
 				x /= 4, y /= 4;
 				/*齐次坐标*/
-				point2D.at<double>(0, 0) = x;
-				point2D.at<double>(1, 0) = y;
-				point2D.at<double>(2, 0) = 1;
+				point2D.at<float>(0, 0) = x;
+				point2D.at<float>(1, 0) = y;
+				point2D.at<float>(2, 0) = 1;
 				/*平均周围深度，减少误差*/
 				double Zc = (depthMat.at<UINT16>(y, x)
 					+depthMat.at<UINT16>(y+5, x)
@@ -332,7 +404,7 @@ int main()
 					+depthMat.at<UINT16>(y, x+5)
 					)/5;
 				//cout << R_cam2base.type() << depth+ depthMat.at<UINT16>(y - 5, x + 5)CameraMatrix.type() << point2D.type() << t_cam2base.type() << endl;
-				depthCameraMatrix.convertTo(depthCameraMatrix, CV_64F);
+
 
 				cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
 				//cout << R_cam2base.t() << endl;
@@ -348,9 +420,9 @@ int main()
 				cout << angle << endl;
 				
 				float coords[12];
-				coords[0] = point3D.at<double>(0, 0);
-				coords[1] = point3D.at<double>(1, 0);
-				coords[2] = point3D.at<double>(2, 0) - 2;
+				coords[0] = point3D.at<float>(0, 0);
+				coords[1] = point3D.at<float>(1, 0);
+				coords[2] = point3D.at<float>(2, 0) - 3;
 				coords[3] = angle;
 				coords[4] = 0;
 				coords[5] = 0;
@@ -364,7 +436,6 @@ int main()
 			}
 		}
 	}
-	sr->close();
 return 0;
 }
 int mainold()
@@ -479,7 +550,7 @@ int mainold()
 				//Point3D.x /= depthCameraMatrix.at<float>(0, 0) ;
 				//Point3D.y /= depthCameraMatrix.at<float>(1, 1) ;
 
-				swap(Point3D.x, Point3D.y);
+				std::swap(Point3D.x, Point3D.y);
 				//cout << "pixel:"<<x << " " << y << endl;
 				Point3D.x += robot_x;
 				Point3D.y += robot_y;

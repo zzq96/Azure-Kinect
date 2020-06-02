@@ -1027,14 +1027,42 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 	}
 	//ZZQ加
 	//把每个联通元的边界找出来，并求凸包
-	for (int y = 0; y < lHeight; y++)
-		for (int x = 0; x < lWidth; x++)
+	for (int y = 1; y < lHeight - 1; y++)
+		for (int x = 1; x < lWidth - 1; x++)
 		{
 			int tmp = y * lWidth + x;//得到该像素在数组中的位置
-
 			if (pdibData[tmp] == 0 || pdibData[tmp] == 255)continue;
 			int id = Map[pdibData[tmp]];
-			if (id != -1)rescomponent[id].P.push_back(Point(x, y));
+			int cnt = 0;
+			if (id != -1) 
+			{
+				/*只push边界上的点，即4联通中有id为-1的或者在图像边界的*/
+			//	if (y != 1 && y != lHeight - 2 && x != 1 && x != lWidth - 2)
+			//	{
+			//		tmp = (y + 1) * lWidth + x;
+			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 255 && Map[pdibData[tmp]] == id)
+			//			cnt++;
+			//		tmp = (y - 1) * lWidth + x;
+			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 255 && Map[pdibData[tmp]] == id)
+			//			cnt++;
+			//		tmp = (y) * lWidth + x + 1;
+			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 255 && Map[pdibData[tmp]] == id)
+			//			cnt++;
+			//		tmp = (y) * lWidth + x - 1;
+			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 25 && Map[pdibData[tmp]] == id)
+			//			cnt++;
+			//		cout <<x<<" "<<y<<" "<<cnt << endl;
+			//		if (cnt == 4)
+			//			break;
+			//		rescomponent[id].P.push_back(Point(x, y));
+
+			//	}
+			//	else
+				{
+					//cout << (x, y) << endl;
+					rescomponent[id].P.push_back(Point(x, y));
+				}
+			}
 #ifdef _ZZQDebug__
 			printf("%d",pdibData[tmp]);
 			if (x == lWidth - 1)printf("\n");
