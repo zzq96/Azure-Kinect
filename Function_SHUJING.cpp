@@ -149,8 +149,8 @@ int ObjectLocation(cv::Mat cameraParameters, UINT16* DepthFrameData, int iDistan
 				rescomponent[k].sign = true;
 				continue;
 			}
-			if (rescomponent[k].compshape.maxx - rescomponent[k].compshape.minx < 40
-				|| rescomponent[k].compshape.maxy - rescomponent[k].compshape.miny < 40)
+			if (rescomponent[k].compshape.maxx - rescomponent[k].compshape.minx < 30
+				|| rescomponent[k].compshape.maxy - rescomponent[k].compshape.miny < 30)
 			{
 				rescomponent[k].sign = true;
 				continue;
@@ -278,16 +278,17 @@ int iHis_part(int* iHis, int* iBegin, int* iEnd, int inum)
 	int iBeg_t[20];
 	int iEnd_t[20];
 	int iPixel_num;
+	int threshold_num = 150;
 	bool bflg = false;
 	k = 0;
 	for (i = 1; i <255;i++)
 	{
-		if (bflg==false&&iHis[i] > 500)
+		if (bflg==false&&iHis[i] > threshold_num)
 		{
 			iBeg_t[k] = i;
 			bflg = true;
 		}
-		else if (bflg == true && iHis[i] < 500)
+		else if (bflg == true && iHis[i] < threshold_num)
 		{
 			iEnd_t[k] = i - 1;
 			bflg = false;
@@ -319,7 +320,7 @@ int iHis_part(int* iHis, int* iBegin, int* iEnd, int inum)
 	{
 		iPixel_num = iPixel_num + iHis[j];
 	}
-	if (iPixel_num>500)
+	if (iPixel_num>threshold_num)
 	{
 		iBegin[kk] = iBeg_t[k-1];
 		iEnd[kk] = iEnd_t[k-1];

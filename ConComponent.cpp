@@ -944,7 +944,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 
 	//滤除噪声以及象素数太少的连通元------------------------------------------------------
 	LONG SmallThresh;
-	SmallThresh = 100;
+	SmallThresh = 500;
 
 	long precdeletenum;//滤除噪声前的连通元个数
 	for (i = 1, k = 0; i < count; i++)//把各连通元的根的索引提取出来存放在pstack数组中，以减少后面访问，操作的时间
@@ -968,6 +968,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 	{
 		if (stack[i].sign == FALSE && stack[i].pixelnum > SmallThresh)
 		{
+			cout << "num:"<<stack[i].pixelnum << endl;
 			Map[stack[i].value] = precdeletenum;
 			rescomponent[precdeletenum].sign = FALSE;
 			rescomponent[precdeletenum].pixelnum = stack[i].pixelnum;
