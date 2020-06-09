@@ -33,7 +33,7 @@ void Convex(std::vector<Point>& p, std::vector<Point>& r) {
 }
 //在image画p1到p2的一条线，y=kx+b
 //RGBA格式
-void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Point& p2, int channelNum)
+void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Point& p2, int channelNum, int b, int g, int r)
 {
 	int x1=p1.x, y1=p1.y, x2=p2.x, y2=p2.y;
 	int dx, dy;
@@ -52,17 +52,17 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 		}
 		else
 		{
-			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + x * channelNum] = b;
+			image[y * lwidth * channelNum + x * channelNum + 1] = g;
+			image[y * lwidth * channelNum + x * channelNum + 2] = r;
 
-			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + (x + 1) * channelNum] = b;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = g;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = r;
 
-			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[(y + 1) * lwidth * channelNum + x * channelNum] = b;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = g;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = r;
 		}
 		p = 2 * abs(dy) - abs(dx);
 		for (i = min(x1, x2); i < max(x1, x2); i++)
@@ -81,17 +81,17 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 			}
 			if (x< 0 || x+2 > lwidth || y < 0 || y+2> lheight)
 					continue;
-			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + x * channelNum] = b;
+			image[y * lwidth * channelNum + x * channelNum + 1] = g;
+			image[y * lwidth * channelNum + x * channelNum + 2] = r;
 
-			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + (x + 1) * channelNum] = b;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = g;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = r;
 
-			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[(y + 1) * lwidth * channelNum + x * channelNum] = b;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = g;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = r;
 		}
 	}
 	else {
@@ -110,17 +110,17 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 		}
 		else
 		{
-			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + x * channelNum] = b;
+			image[y * lwidth * channelNum + x * channelNum + 1] = g;
+			image[y * lwidth * channelNum + x * channelNum + 2] = r;
 
-			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + (x + 1) * channelNum] = b;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = g;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = r;
 
-			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[(y + 1) * lwidth * channelNum + x * channelNum] = b;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = g;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = r;
 		}
 		p = 2 * abs(dx) - abs(dy);
 		for (i = min(y1, y2); i < max(y1, y2); i++)
@@ -138,24 +138,24 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 			}
 			if (x< 0 || x+2 > lwidth || y < 0 || y+2> lheight)
 				continue;
-			image[y * lwidth * channelNum + x * channelNum] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + x * channelNum] = b;
+			image[y * lwidth * channelNum + x * channelNum + 1] = g;
+			image[y * lwidth * channelNum + x * channelNum + 2] = r;
 
-			image[y * lwidth * channelNum + (x + 1) * channelNum] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = 0;
-			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = 255;
+			image[y * lwidth * channelNum + (x + 1) * channelNum] = b;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 1] = g;
+			image[y * lwidth * channelNum + (x + 1) * channelNum + 2] = r;
 
-			image[(y + 1) * lwidth * channelNum + x * channelNum] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = 0;
-			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = 255;
+			image[(y + 1) * lwidth * channelNum + x * channelNum] = b;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 1] = g;
+			image[(y + 1) * lwidth * channelNum + x * channelNum + 2] = r;
 		}
 	}
 
 }
 //在image上画凸包
 int flag = 0;
-void Draw_Convex(cv::Mat & image, long lwidth, long lheight, const std::vector<Point>& r)
+void Draw_Convex(cv::Mat & image, long lwidth, long lheight, const std::vector<Point>& r, int cb, int cg, int cr)
 {
 	//if (flag >=2 )return;
 	int n = r.size();
@@ -175,7 +175,7 @@ void Draw_Convex(cv::Mat & image, long lwidth, long lheight, const std::vector<P
 		image[y * lwidth * 3 + x * 3] = 0;
 		image[y * lwidth * 3 + x * 3 + 1] = 255;
 		image[y * lwidth * 3 + x * 3 + 2] = 0;*/
-		Draw_Line(image.data, lwidth, lheight, r[i], r[(i + 1) % n], image.channels());
+		Draw_Line(image.data, lwidth, lheight, r[i], r[(i + 1) % n], image.channels(), cb, cg, cr);
 	}
 	//flag ++;
 }

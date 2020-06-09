@@ -55,7 +55,7 @@ struct Point {
 };
 typedef Point Vector;
 void Convex(std::vector<Point>& P, std::vector<Point>& R);
-void Draw_Convex(cv::Mat &image, LONG lwidth, LONG lheight, const std::vector<Point>& R);
+void Draw_Convex(cv::Mat &image, LONG lwidth, LONG lheight, const std::vector<Point>& R, int cb, int cg, int cr);
 void RC(std::vector<Point>& P, std::vector<Point> & t);
 bool pointIsInRect(Point p, const std::vector<Point> & R);
 #endif

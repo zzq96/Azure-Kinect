@@ -49,10 +49,10 @@ int ObjectLocation(cv::Mat cameraParameters, UINT16* DepthFrameData, int iDistan
 					//DepthImage[i*iWid + j] = DepthFrameData[130*iWid + 320] / k;
 					DepthImage[i * iWid + j] = 255;// iDistance / 5.3;// iDistance是皮带高度，对于皮带部分统一画面
 				}
-				else if (iDistance - DepthFrameData[i * iWid + j] < 500 && iDistance - DepthFrameData[i * iWid + j]>0)
+				else if (iDistance - DepthFrameData[i * iWid + j] < 400 && iDistance - DepthFrameData[i * iWid + j]>0)
 				{	//把皮带内的包裹深度信号转换为灰度值
 					cnt++;
-					DepthImage[i * iWid + j] = 255 - (float)(iDistance - DepthFrameData[i * iWid + j]) / 500 * 255;// / 5.3;//((float)(DepthFrameData[i*iWid + j] - 700)/600)*255;
+					DepthImage[i * iWid + j] = 255 - (float)(iDistance - DepthFrameData[i * iWid + j]) / 400 * 255;// / 5.3;//((float)(DepthFrameData[i*iWid + j] - 700)/600)*255;
 				}
 				else
 					DepthImage[i * iWid + j] = 255;
@@ -275,10 +275,10 @@ int ObjectLocation(cv::Mat cameraParameters, UINT16* DepthFrameData, int iDistan
 int iHis_part(int* iHis, int* iBegin, int* iEnd, int inum)
 {
 	int i,j,k;
-	int iBeg_t[20];
-	int iEnd_t[20];
+	int iBeg_t[100];
+	int iEnd_t[100];
 	int iPixel_num;
-	int threshold_num = 150;
+	int threshold_num = 100;
 	bool bflg = false;
 	k = 0;
 	for (i = 1; i <255;i++)
