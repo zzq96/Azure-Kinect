@@ -1028,8 +1028,10 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 			}
 		}
 	}
+	int64 start = cv::getTickCount();
 	//ZZQ加
 	//把每个联通元的边界找出来，并求凸包
+	int tmp_id;
 	for (int y = 1; y < lHeight - 1; y++)
 		for (int x = 1; x < lWidth - 1; x++)
 		{
@@ -1040,29 +1042,29 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 			if (id != -1) 
 			{
 				/*只push边界上的点，即4联通中有id为-1的或者在图像边界的*/
-			//	if (y != 1 && y != lHeight - 2 && x != 1 && x != lWidth - 2)
-			//	{
-			//		tmp = (y + 1) * lWidth + x;
-			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 255 && Map[pdibData[tmp]] == id)
-			//			cnt++;
-			//		tmp = (y - 1) * lWidth + x;
-			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 255 && Map[pdibData[tmp]] == id)
-			//			cnt++;
-			//		tmp = (y) * lWidth + x + 1;
-			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 255 && Map[pdibData[tmp]] == id)
-			//			cnt++;
-			//		tmp = (y) * lWidth + x - 1;
-			//		if (pdibData[tmp] !=0 && pdibData[tmp] != 25 && Map[pdibData[tmp]] == id)
-			//			cnt++;
-			//		cout <<x<<" "<<y<<" "<<cnt << endl;
-			//		if (cnt == 4)
-			//			break;
-			//		rescomponent[id].P.push_back(Point(x, y));
-
-			//	}
-			//	else
+				if (y != 1 && y != lHeight - 2 && x != 1 && x != lWidth - 2)
 				{
-					//cout << (x, y) << endl;
+					tmp = (y + 1) * lWidth + x;
+					tmp_id = Map[pdibData[tmp]];
+					if (pdibData[tmp] ==0 || pdibData[tmp] == 255 || tmp_id != id || tmp_id == -1 )
+						cnt++;
+					tmp = (y - 1) * lWidth + x;
+					tmp_id = Map[pdibData[tmp]];
+					if (pdibData[tmp] ==0 || pdibData[tmp] == 255 || tmp_id != id || tmp_id == -1 )
+						cnt++;
+					tmp = (y) * lWidth + x + 1;
+					tmp_id = Map[pdibData[tmp]];
+					if (pdibData[tmp] ==0 || pdibData[tmp] == 255 || tmp_id != id || tmp_id == -1 )
+						cnt++;
+					tmp = (y) * lWidth + x - 1;
+					tmp_id = Map[pdibData[tmp]];
+					if (pdibData[tmp] ==0 || pdibData[tmp] == 255 || tmp_id != id || tmp_id == -1 )
+						cnt++;
+					if (cnt != 0)
+						rescomponent[id].P.push_back(Point(x, y));
+				}
+				else
+				{
 					rescomponent[id].P.push_back(Point(x, y));
 				}
 			}
@@ -1074,13 +1076,8 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 
 		}
 
-	int64 start = cv::getTickCount();
 	for (int i = 0; i < precdeletenum; i++)
 	{
-		//cout << "pixelnum:"<<rescomponent[i].pixelnum << endl;
-		//cout << "value:"<<rescomponent[i].value << endl;
-		//cout << "sign"<<rescomponent[i].sign << endl;
-		//cout << "num" << rescomponent[i].P.size() << endl;
 			
 		//rescomponent[i].R = rescomponent[i].P;
 		Convex(rescomponent[i].P, rescomponent[i].R);
@@ -1090,7 +1087,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 	}
 	int64 end = cv::getTickCount();
 	if(precdeletenum != 0)
-	cout <<"凸包+最小四边形用时："<<(end - start) * 1000 /cv::getTickFrequency() / precdeletenum << endl;
+	cout <<"凸包+最小四边形用时："<<(end - start) * 1000 /cv::getTickFrequency()  << endl;
 
 	//ZZQ加结束
 	ReleaseList(headrun, lHeight + 2);///释放游程表
