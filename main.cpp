@@ -370,6 +370,9 @@ k4a::KinectAPI kinect;
 int main1()
 {
 	
+	cv::Mat cameraMatrix, disCoeffs;
+	kinect.GetIntrinsicParam(cameraMatrix,disCoeffs, "color");
+	cout << cameraMatrix << endl;
 	try {
 		//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud < pcl::PointXYZRGB>());
 		//opencv图像
@@ -379,7 +382,7 @@ int main1()
 		{
 			printf("第%d张图片\n", real_cnt);
 			cv::Mat depthMat, colorMat, depthcolorMat ,irMat, ircolorMat;
-			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, FALSE);
+			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, TRUE);
 			//cv::Mat irMat_ = irMat.clone();
 
 			//for(int x = 0; x < irMat.rows; x ++)
@@ -468,6 +471,8 @@ int main1()
 }
 int main()
 {
+	bool useRobot = FALSE;
+	
 	string caliberation_camera_file = "caliberation_camera.xml";
 	string Homo_cam2base_file = "Homo_cam2base.xml";
 	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
@@ -485,10 +490,13 @@ int main()
 	/*为什么要求逆？*/
 	Homo_cam2base = Homo_cam2base.inv();
 	fs2.release();
-	/*讲单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
+	/*将单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
 	HomogeneousMtr2RT(Homo_cam2base, R_cam2base, t_cam2base);
 
-	SocketRobot* sr = new SocketRobot();
+	SocketRobot* sr = NULL;
+	if (useRobot)
+		sr = new SocketRobot();
+	
 	//cout << "按任意键开始" << endl;
 	//system("pause");
 	//Sleep(2000);
@@ -572,7 +580,8 @@ int main()
 			if (iObj_num == 0)
 			{
 				Sleep(1000);
-				//sr->close();
+				//if(useRobot)
+				//	sr->close();
 				//cout << "退出" << endl;
 				//break;
 			}
@@ -643,7 +652,8 @@ int main()
 				coords[10] = 0;
 				coords[11] = 0;
 
-				sr->moveRobot(coords);
+				if(useRobot)
+					sr->moveRobot(coords);
 
 			}
 			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");

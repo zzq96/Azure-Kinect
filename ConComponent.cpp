@@ -1,5 +1,7 @@
 #include <math.h>
 #include "ConComponent.h"
+#include<time.h>
+#include<opencv2/opencv.hpp>
 //功能：释放连同元标定时所建得链表
 //20170221-添加应用矩计算倾斜角度函数
 #define STACKSIZE 20000
@@ -1072,6 +1074,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 
 		}
 
+	int64 start = cv::getTickCount();
 	for (int i = 0; i < precdeletenum; i++)
 	{
 		//cout << "pixelnum:"<<rescomponent[i].pixelnum << endl;
@@ -1085,6 +1088,9 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 		RC(rescomponent[i].R, t);//求出最小外接矩形
 		rescomponent[i].R = t;
 	}
+	int64 end = cv::getTickCount();
+	if(precdeletenum != 0)
+	cout <<"凸包+最小四边形用时："<<(end - start) * 1000 /cv::getTickFrequency() / precdeletenum << endl;
 
 	//ZZQ加结束
 	ReleaseList(headrun, lHeight + 2);///释放游程表

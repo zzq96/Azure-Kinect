@@ -39,7 +39,7 @@ typedef struct e{
 		distance;//蓄水池的方向，若为1则蓄水池方向向上，若为-1则蓄水池方向向下，若为0则是一个空洞，若为其他值，则说明不是一个蓄水池
 	POINT Barycenter;//component的重心
 	std::vector<Point> R;//最小外接矩形，ZZQ加，2019.7.29
-	std::vector<Point>P;//边界，ZZQ
+	std::vector<Point> P;//边界，ZZQ
 }CodeComponent;
 //---end---连通元算法结构体----end------//
 
