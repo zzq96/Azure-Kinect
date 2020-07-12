@@ -54,8 +54,19 @@ struct Point {
 
 };
 typedef Point Vector;
+//求点集的凸包，P是输入点集，R是凸包顶点集合
 void Convex(std::vector<Point>& P, std::vector<Point>& R);
-void Draw_Convex(cv::Mat &image, LONG lwidth, LONG lheight, const std::vector<Point>& R, int cb, int cg, int cr);
+//channel是输入图像的通道数3或者4。R是想在图上画出的多边形。 cb，cg，cr是BGR颜色,
+void Draw_Polygon(BYTE* image, LONG lwidth, LONG lheight, int channels, const std::vector<Point>& R, int cb, int cg, int cr);
+
+//求出点集p的外接矩阵并画出框
+//image：需要画图的图像。lwidth，lheight：图像宽和高。channels：图像通道数（3或4）。p：点集。cb，cg，cr：BGR颜色值
+void Draw_MBROfPoints(BYTE* image, long lwidth, long lheight, int channels, std::vector<Point>& p, int cb, int cg, int cr);
+//求出多个点集p的外接矩阵并画出框
+//image：需要画图的图像。lwidth，lheight：图像宽和高。channels：图像通道数（3或4）。p：点集。cb，cg，cr：BGR颜色值
+void Draw_MBRsOfPoints(BYTE* image, long lwidth, long lheight, int channels, std::vector<vector<Point>>& p, int cb, int cg, int cr);
+//求点集的外接四边形。P是输入点集。t是外接四边形顶点。
 void RC(std::vector<Point>& P, std::vector<Point> & t);
+//判断一个点是否在凸多边形内部
 bool pointIsInRect(Point p, const std::vector<Point> & R);
 #endif

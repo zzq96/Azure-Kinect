@@ -153,9 +153,66 @@ void Draw_Line(BYTE *image, long lwidth, long lheight, const Point& p1, const Po
 	}
 
 }
+void Draw_MBRsOfPoints(BYTE* image, long lwidth, long lheight, int channels, std::vector<vector<Point>>& p, int cb, int cg, int cr)
+{
+	for (int i = 0; i < p.size(); i++)
+	{
+		Draw_MBROfPoints(image, lwidth, lheight, channels, p[i], cb, cg, cr);
+	}
+}
+void Draw_MBROfPoints(BYTE* image, long lwidth, long lheight, int channels, std::vector<Point>& p, int cb, int cg, int cr)
+{
+	//用来记录每行每列的开头和结尾
+	int (*row_record)[2] = (int(*)[2])malloc(sizeof(int) * lheight * 2);
+	int (*col_record)[2] = (int(*)[2])malloc(sizeof(int) * lwidth * 2);
+	memset(row_record, -1, sizeof(int) * lheight * 2);
+	memset(col_record, -1, sizeof(int) * lwidth * 2);
+
+	vector<Point> MBR, new_p;
+	//TODO:删除非边界点,注意越界的问题
+	int x, y;
+	for (auto i : p)
+	{
+		x = i.x, y = i.y;
+		if (row_record[y][0] == -1)
+			row_record[y][0] = row_record[y][1] = x;
+		if (col_record[x][0] == -1)
+			col_record[x][0] = col_record[x][1] = y;
+
+		if (x < row_record[y][0])
+			row_record[y][0] = x;
+		if (x > row_record[y][1])
+			row_record[y][1] = x;
+
+		if (y < col_record[x][0])
+			col_record[x][0] = y;
+		if (y > col_record[x][1])
+			col_record[x][1] = y;
+	}
+	for(int i = 0; i < lwidth ; i++)
+		if (col_record[i][0] != -1)
+		{
+			new_p.push_back(Point(i, col_record[i][0]));
+			if(col_record[i][0] != col_record[i][1])
+				new_p.push_back(Point(i, col_record[i][1]));
+		}
+	for(int i = 0; i < lheight ; i++)
+		if (row_record[i][0] != -1)
+		{
+			new_p.push_back(Point(row_record[i][0], i));
+			if(row_record[i][0] != row_record[i][1])
+				new_p.push_back(Point(row_record[i][1], i));
+		}
+
+	RC(new_p, MBR);
+	Draw_Polygon(image, lwidth, lheight, channels, MBR, cb, cg, cr);
+
+	free(row_record);
+	free(col_record);
+}
 //在image上画凸包
 int flag = 0;
-void Draw_Convex(cv::Mat & image, long lwidth, long lheight, const std::vector<Point>& r, int cb, int cg, int cr)
+void Draw_Polygon(BYTE *image, long lwidth, long lheight, int channels, const std::vector<Point>& r, int cb, int cg, int cr)
 {
 	//if (flag >=2 )return;
 	int n = r.size();
@@ -175,13 +232,15 @@ void Draw_Convex(cv::Mat & image, long lwidth, long lheight, const std::vector<P
 		image[y * lwidth * 3 + x * 3] = 0;
 		image[y * lwidth * 3 + x * 3 + 1] = 255;
 		image[y * lwidth * 3 + x * 3 + 2] = 0;*/
-		Draw_Line(image.data, lwidth, lheight, r[i], r[(i + 1) % n], image.channels(), cb, cg, cr);
+		Draw_Line(image, lwidth, lheight, r[i], r[(i + 1) % n], channels, cb, cg, cr);
 	}
 	//flag ++;
 }
 //求最小面积外界矩形
-void RC(std::vector<Point>& v, std::vector<Point>& ans)
+void RC(std::vector<Point>& p, std::vector<Point>& ans)
 {
+	vector<Point> v;
+	Convex(p, v);
 	ans.resize(4);
 	double min_s = 1e18;
 	int cnt = v.size();

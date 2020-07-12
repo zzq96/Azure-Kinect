@@ -588,9 +588,9 @@ int main()
 			for (int i = 0; i < iObj_num; i++)
 			{
 				if(i == 0)
-					Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R, 0, 0, 255);
+					Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 0, 0, 255);
 				else
-					Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R, 255, 0, 0);
+					Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 255, 0, 0);
 			}
 			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 			//cout << "iObj_num:"<<iObj_num << endl;
@@ -725,7 +725,7 @@ int mainold()
 			for (int i = 0; i < iObj_num; i++)
 			{
 				if(i == 0)
-				Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R, 0, 0, 255);
+				Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 0, 0, 255);
 				float x=0, y=0;
 				for (int j = 0; j < 4; j++)
 				{
@@ -818,7 +818,7 @@ void TestGetXYZAtCameraView()
 		cout << "iObj_num:"<<iObj_num << endl;
 		for (int i = 0; i < iObj_num; i++)
 		{
-			Draw_Convex(img_depthcolor, img_depthcolor.cols, img_depthcolor.rows, ObjectRes[i].R, 0, 0, 255);
+			Draw_Polygon(img_depthcolor.data, img_depthcolor.cols, img_depthcolor.rows, 4, ObjectRes[i].R, 0, 0, 255);
 		}
 		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
 	}

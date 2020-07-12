@@ -1028,7 +1028,7 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 			}
 		}
 	}
-	int64 start = cv::getTickCount();
+	//int64 start = cv::getTickCount();
 	//ZZQ加
 	//把每个联通元的边界找出来，并求凸包
 	int tmp_id;
@@ -1079,15 +1079,11 @@ int ConCompLabelling8_label(BYTE* lpDIB, LONG lWidth, LONG lHeight, CodeComponen
 	for (int i = 0; i < precdeletenum; i++)
 	{
 			
-		//rescomponent[i].R = rescomponent[i].P;
-		Convex(rescomponent[i].P, rescomponent[i].R);
-		std::vector<Point> t;
-		RC(rescomponent[i].R, t);//求出最小外接矩形
-		rescomponent[i].R = t;
+		RC(rescomponent[i].P, rescomponent[i].R);//求出最小外接矩形
 	}
-	int64 end = cv::getTickCount();
-	if(precdeletenum != 0)
-	cout <<"凸包+最小四边形用时："<<(end - start) * 1000 /cv::getTickFrequency()  << endl;
+	//int64 end = cv::getTickCount();
+	//if(precdeletenum != 0)
+	//cout <<"凸包+最小四边形用时："<<(end - start) * 1000 /cv::getTickFrequency()  << endl;
 
 	//ZZQ加结束
 	ReleaseList(headrun, lHeight + 2);///释放游程表
