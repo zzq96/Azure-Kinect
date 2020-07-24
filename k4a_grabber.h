@@ -28,6 +28,7 @@ public:
 	//depthMat is a depth image in 16UC1 format, 每个元素表示物体在相机视角下的深度，单位mm
 	//depthcolor is a pseudo-color image in 8UC4，将深度图转化为伪彩色图像以便可视化
 	void GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color);
+	void GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation, cv::Mat& Depth2ColorTranslation);
 	void ShowOpenCVImage(cv::Mat Img, std::string name);
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
 
@@ -35,6 +36,7 @@ public:
 	//cameraType是"depth"or"color"
 	//discoeffs:k1, k2, p1, p2, k3
 	void GetIntrinsicParam(cv::Mat& cameraMatrix, cv::Mat& disCoeffs, const std::string cameraType);
+	void SetIntrinsicParam(cv::Mat& depthcameraMatrix, cv::Mat& depthdisCoeffs, cv::Mat& colorcameraMatrix, cv::Mat& colordisCoeffs);
 
 	//TODO(zzq):目标坐标系下的XYZ值
 	//得到目标坐标系下的xyz值

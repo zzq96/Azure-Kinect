@@ -19,13 +19,16 @@
 #include"SocketRobot.h"
 
 const double PI = 3.1415926;
-cv::Mat depthMatOld, depthMat, colorMatOld,colorMat, depthcolorMat,  depthcolorMatOld, irMat, ircolorMat;
+cv::Mat depthMat,colorMat, depthcolorMat, irMat, ircolorMat;
+cv::Mat depthMatOld,colorMatOld, depthcolorMatOld, irMatOld, ircolorMatOld;
+cv::Mat Depth2ColorRotation, Depth2ColorTranslation;
 //深度值经过外参校正后的深度图像
 cv::Mat depthMatRevise;
 Object ObjectRes[10];
 cv::Mat depthCameraMatrix, depthDistCoeffs;
 cv::Mat colorCameraMatrix, colorDistCoeffs;
-cv::Mat R_cam2base, t_cam2base;
+cv::Mat color_R_cam2base, color_t_cam2base;
+cv::Mat depth_R_cam2base, depth_t_cam2base;
 bool shang = TRUE;
 // Checks if a matrix is a valid rotation matrix.
 bool isRotationMatrix(cv::Mat &R)
@@ -131,8 +134,8 @@ bool compareByHeight(Object a, Object b)
 	UINT16 aDepth = getDepth(aM);
 	UINT16 bDepth = getDepth(bM);
 	//根据外参计算到机械臂坐标系
-	cv::Mat a3D = R_cam2base.t() * (depthCameraMatrix.inv() * aDepth * aM - t_cam2base);
-	cv::Mat b3D = R_cam2base.t() * (depthCameraMatrix.inv() * bDepth * bM - t_cam2base);
+	cv::Mat a3D = color_R_cam2base.t() * (depthCameraMatrix.inv() * aDepth * aM - color_t_cam2base);
+	cv::Mat b3D = color_R_cam2base.t() * (depthCameraMatrix.inv() * bDepth * bM - color_t_cam2base);
 	return a3D.at<float>(2, 0) > b3D.at<float>(2, 0);
 }
 bool compareByArea(Object a, Object b)
@@ -155,11 +158,28 @@ void HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 	T = HomoMtr(T_rect);
 
 }
+
+cv::Mat RT2HomogeneousMatrix(const cv::Mat& R,const cv::Mat& T)
+{
+	cv::Mat HomoMtr;
+	cv::Mat_<double> R1 = (cv::Mat_<double>(4, 3) << 
+										R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2),
+										R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2),
+										R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2),
+										0, 0, 0);
+	cv::Mat_<double> T1 = (cv::Mat_<double>(4, 1) <<
+										T.at<double>(0,0),
+										T.at<double>(1,0),
+										T.at<double>(2,0),
+										1);
+	cv::hconcat(R1, T1, HomoMtr);		//矩阵拼接
+	return HomoMtr;
+}
 //计算周围5个点的平均值
 void calPoint3D(cv::Mat point2D, cv::Point3f & real, UINT16 Zc)
 {
 	assert(Zc != 0);
-	cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
+	cv::Mat point3D = color_R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - color_t_cam2base);
 	real.x = point3D.at<float>(0, 0);
 	real.y = point3D.at<float>(1, 0);
 	real.z = point3D.at<float>(2, 0);
@@ -494,215 +514,164 @@ int main()
 	fs.release();
 
 	cv::FileStorage fs2(Homo_cam2base_file, cv::FileStorage::READ); //读取相机与基座的转化关系XML文件  
-	cv::Mat Homo_cam2base;
-	fs2["Homo_cam2base"] >> Homo_cam2base;
-	cout << "Homo_cam2base" << Homo_cam2base << endl;
+	cv::Mat color_Homo_cam2base;
+	fs2["color_Homo_cam2base"] >> color_Homo_cam2base;
+	cout << "color_Homo_cam2base" << color_Homo_cam2base << endl;
 	/*为什么要求逆？*/
-	Homo_cam2base = Homo_cam2base.inv();
+	color_Homo_cam2base = color_Homo_cam2base.inv();
 	fs2.release();
 	/*将单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
-	HomogeneousMtr2RT(Homo_cam2base, R_cam2base, t_cam2base);
+	HomogeneousMtr2RT(color_Homo_cam2base, color_R_cam2base, color_t_cam2base);
 
 	SocketRobot* sr = NULL;
 	if (useRobot)
 		sr = new SocketRobot();
 	
-	//cout << "按任意键开始" << endl;
-	//system("pause");
-	//Sleep(2000);
+
+	kinect.GetRotationAndTranslationFromDepth2Color(Depth2ColorRotation, Depth2ColorTranslation);
+
+	cv::Mat Homo_depth2color = RT2HomogeneousMatrix(Depth2ColorRotation, Depth2ColorTranslation);
 
 
-	int iDistance = 1280;//相机到桌面的距离
 	cv::Mat point2D(3, 1, CV_32F, cv::Scalar(0)); 
 	point2D.at<float>(2, 0) = 1;
 	cv::Mat point3D;
-	cv::Mat depthCameraMatrixInv = depthCameraMatrix.inv();
+	//cv::Mat point3D = color_R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
 
-	int minh = 0, maxh = 400;
-	int minw = 200, maxw = 550;
-	cv::Mat point2DSet(3, (maxh - minh) * (maxw - minw), CV_32F, cv::Scalar(0));
-	cv::Mat pointDepthSet(3, (maxh - minh) * (maxw - minw), CV_32F, cv::Scalar(0));
-	cv::Mat t_cam2baseSet(3, (maxh - minh) * (maxw - minw), CV_32F, cv::Scalar(0));
-	int tmp = 0;
-	//576,640是深度图的行数和列数
-	for (int h = 0; h < 576; h++)
-		for (int w = 0; w < 640; w++)
-			if (h >= minh && h < maxh && w >= minw && w < maxw) {
-				point2DSet.at<float>(0, tmp) = w;
-				point2DSet.at<float>(1, tmp) = h;
-				point2DSet.at<float>(2, tmp) = 1;
-				t_cam2baseSet.at<float>(0, tmp) = t_cam2base.at<float>(0, 0);
-				t_cam2baseSet.at<float>(1, tmp) = t_cam2base.at<float>(1, 0);
-				t_cam2baseSet.at<float>(2, tmp) = t_cam2base.at<float>(2, 0);
-				tmp++;
-			}
-	cout << "tmp" << tmp << endl;
-	cv::Mat depthAndpointSet = depthCameraMatrixInv * point2DSet;
 	int cnt = 0;
 	while(1)
 	{ 
-		{
+
 			kinect.GetOpenCVImage(colorMatOld, depthMatOld, depthcolorMatOld, irMat, FALSE);
-			//kinect.ShowOpenCVImage(depthcolorMatOld, "old");
-			/*根据内参和畸变系数校正图像*/
+			///*根据内参和畸变系数校正图像*/
 			undistort(depthMatOld,depthMat,depthCameraMatrix,depthDistCoeffs);  
 			undistort(depthcolorMatOld,depthcolorMat,depthCameraMatrix,depthDistCoeffs);  
 			undistort(colorMatOld,colorMat,colorCameraMatrix,colorDistCoeffs);  
-			kinect.ShowOpenCVImage(colorMat, "color");
-			depthMatRevise = depthMat.clone();
-			int tmp = 0;
-			for (int h = 0; h < depthMat.rows; h++)
-				for (int w = 0; w < depthMat.cols; w++)
-					if (h >= minh && h < maxh && w >= minw && w < maxw) {
-						pointDepthSet.at<float>(0, tmp) = depthMatRevise.at<UINT16>(h, w);
-						pointDepthSet.at<float>(1, tmp) = depthMatRevise.at<UINT16>(h, w);
-						pointDepthSet.at<float>(2, tmp) = depthMatRevise.at<UINT16>(h, w);
-						tmp++;
-					}
-					else
-					{
+			//kinect.ShowOpenCVImage(colorMat, "color");
+			//kinect.ShowOpenCVImage(colorMatOld, "color");
+			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			//kinect.ShowOpenCVImage(depthcolorMatOld, "depthcolor");
+			//将depth转化为color视角
+			cv::Mat depthMatRevise(colorMat.rows, colorMat.cols, CV_16UC1, cv::Scalar(0)), \
+				depthcolorMatRevise(colorMat.rows, colorMat.cols, CV_8UC4, cv::Scalar(0));
 
-							//把其他无关区域深度设0
-							depthMatRevise.at<UINT16>(h, w) = 0;
-							//depthcolorMat.at<cv::Vec4b>(h, w)[0] = 0;
-							//depthcolorMat.at<cv::Vec4b>(h, w)[1] = 0;
-							//depthcolorMat.at<cv::Vec4b>(h, w)[2] = 0;
-					}
-
-			//计算每个点经过外参校正后的深度值(机械臂坐标系下)
-			cv::Mat point3DSet = R_cam2base.t() * ((depthAndpointSet).mul(pointDepthSet) - t_cam2baseSet);
-			tmp = 0;
-			for(int h = minh; h < maxh; h++)
-				for (int w = minw; w < maxw; w++)
+			for(int i = 0; i < depthMat.rows;i++)
+				for (int j = 0; j < depthMat.cols; j++)
+				if(depthMat.at<UINT16>(i,j)!=0)
 				{
-					//point3D = R_cam2base.t() * (depthCameraMatrixInv * depthMatRevise.at<UINT16>(h, w) * point2D - t_cam2base);
-					if(depthMatRevise.at<UINT16>(h, w) != 0)
-						depthMatRevise.at<UINT16>(h, w) = iDistance - point3DSet.at<float>(2, tmp);
-					tmp++;
+					point2D.at<float>(0, 0) = j;
+					point2D.at<float>(1, 0) = i;
+					//从depth的图像坐标系转化为depth相机坐标系
+					point3D = depthCameraMatrix.inv() * point2D * depthMat.at<UINT16>(i, j);
+					point3D = Depth2ColorRotation * point3D + Depth2ColorTranslation;
+					//cout << j << " " << i << " " << depthMat.at<UINT16>(i, j) << endl;
+					point2D = colorCameraMatrix * point3D / point3D.at<float>(2, 0);
+					int new_i = point2D.at<float>(0, 1), new_j = point2D.at<float>(0, 0);
+					if (new_i >= 0 && new_j >= 0 && new_i < colorMat.rows && new_j < colorMat.cols)
+					{
+						depthMatRevise.at<UINT16>(new_i, new_j) = depthMat.at<UINT16>(i, j);
+						//cout << depthcolorMat.at<UINT32>(new_i, new_j) << endl;
+						depthcolorMatRevise.at<UINT32>(new_i, new_j) = depthcolorMat.at<UINT32>(i, j);
+					}
 				}
 
-			//kinect.ShowOpenCVImage(depthMatRevise, "img_color");
-			int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)depthMatRevise.data, iDistance, depthMatRevise.cols, depthMatRevise.rows,0, depthMatRevise.rows, ObjectRes);
-			DeleteBadObejct(ObjectRes, iObj_num);
+			kinect.ShowOpenCVImage(depthcolorMat, "img_color");
+			kinect.ShowOpenCVImage(depthcolorMatRevise, "img_color");
+			kinect.ShowOpenCVImage(colorMat, "img_color");
+			//int iObj_num = ObjectLocation(colorCameraMatrix, (UINT16*)colorMat.data, iDistance, depthMatRevise.cols, depthMatRevise.rows,0, depthMatRevise.rows, ObjectRes);
+			//DeleteBadObejct(ObjectRes, iObj_num);
 			//按高度从高到低排序
-			sort(ObjectRes, ObjectRes + iObj_num, compareByHeight);
+			//sort(ObjectRes, ObjectRes + iObj_num, compareByHeight);
 			//TODO:算iou，去掉重叠大的
 			//std::sort(ObjectRes, ObjectRes + iObj_num, compare);
-			cout << "检测到" << iObj_num << "个物体" << endl;
-			if (iObj_num == 0)
-			{
-				Sleep(1000);
-				//if(useRobot)
-				//	sr->close();
-				//cout << "退出" << endl;
-				//break;
-			}
-			////现在有两个快递A，B。用vector数组储存他们的点
-			//vector<Point> A;
-			//vector<Point> B;
+			//cout << "检测到" << iObj_num << "个物体" << endl;
+			//if (iObj_num == 0)
+			//{
+			//	Sleep(1000);
+			//	//if(useRobot)
+			//	//	sr->close();
+			//	//cout << "退出" << endl;
+			//	//break;
+			//}
 
-			////这里的x，y对应图片的第x列，第y行
-			////输入快递A的点集
-			//for(int x = 100; x < 200; x++)
-			//	for(int y = 1; y < 100;y++)
-			//		A.push_back(Point(x, y));
-			////输入快递B的点集
-			//for(int x = 300; x < 400; x++)
-			//	for(int y = 50; y < 100;y++)
-			//		B.push_back(Point(x, y));
+			//////显示图片
+			////cv::namedWindow("name", CV_WINDOW_NORMAL);  
+			////cv::setWindowProperty("name", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+			////cv::imshow("name",depthcolorMat);
+			////cv::waitKey(0);
+			////cv::destroyAllWindows();
 
-			////创建一个二维数组P
-			//vector<vector<Point>> P;
-
-			////将A,B快递的点集push到这个二维数组里面
-			//P.push_back(A);
-			//P.push_back(B);
-
-			////depthcolorMat是opencv的mat类型，depthcolorMat.data就是一个BYTE型的数组
-			////这里的depthcolorMat是BGRA的四通道，所以第四个参数channel=4，
-			////0,0,255即为红色
-			//Draw_MBRsOfPoints(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  P, 0, 0, 255);
-
-			////显示图片
-			//cv::namedWindow("name", CV_WINDOW_NORMAL);  
-			//cv::setWindowProperty("name", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
-			//cv::imshow("name",depthcolorMat);
-			//cv::waitKey(0);
-			//cv::destroyAllWindows();
-
-			for (int i = 0; i < iObj_num; i++)
-			{
-				if(i == 0)
-					Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 0, 0, 255);
-				else
-					Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 255, 0, 0);
-			}
-			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-			//cout << "iObj_num:"<<iObj_num << endl;
-			for (int i = 0; i < iObj_num; i++)
-			{
-				if (i > 0) break;
-//				if(i == 0)
-//					Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
-				//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-				float x=0, y=0;
-				for (int j = 0; j < 4; j++)
-				{
-					x += ObjectRes[i].R[j].x;
-					y += ObjectRes[i].R[j].y;
-				}
-				x /= 4, y /= 4;
-				/*齐次坐标*/
-				point2D.at<float>(0, 0) = x;
-				point2D.at<float>(1, 0) = y;
-				point2D.at<float>(2, 0) = 1;
-				/*平均周围深度，减少误差*/
-				double Zc = (depthMat.at<UINT16>(y, x)
-					+depthMat.at<UINT16>(y+5, x)
-					+depthMat.at<UINT16>(y-5, x)
-					+depthMat.at<UINT16>(y, x-5)
-					+depthMat.at<UINT16>(y, x+5)
-					)/5;
-				float angle = calAngle(ObjectRes[i].R, depthMat.rows, depthMat.cols, Zc);
-				//平面法向量
-				cv::Mat rotationMatrix = calRotationMatrix(ObjectRes[i].R, 0.6);
-				cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(rotationMatrix);
-				cout << "物体的旋转矩阵为" << endl;
-				cout << rotationMatrix << endl;
-
-
-				cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
-				
-				cout << "坐标为:" << endl;
-				cout << point3D << endl;
-				cout << "物体的欧拉角为" << endl;
-				cout << eulerAngles << endl;
-				
-				float coords[12];
-				coords[0] = point3D.at<float>(0, 0);
-				coords[1] = point3D.at<float>(1, 0);
-				coords[2] = point3D.at<float>(2, 0) - 2;
-				coords[3] = eulerAngles[0];
-				coords[4] = eulerAngles[1];
-				coords[5] = eulerAngles[2];
-				coords[6] = 698 + 50;
-				coords[7] = 342 - 750 + cnt * 220;
-				cnt++;
-			
-				if(coords[2] > 160)
-					coords[8] = 160 - 50;
-				else
-					coords[8] = coords[2] - 50;
-				coords[9] = 0;
-				coords[10] = 0;
-				coords[11] = 0;
-
-				if(useRobot)
-					sr->moveRobot(coords);
-
-			}
+			//for (int i = 0; i < iObj_num; i++)
+			//{
+			//	if(i == 0)
+			//		Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 0, 0, 255);
+			//	else
+			//		Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 255, 0, 0);
+			//}
 			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-		}
+			////cout << "iObj_num:"<<iObj_num << endl;
+			//for (int i = 0; i < iObj_num; i++)
+			//{
+			//	if (i > 0) break;
+//			//	if(i == 0)
+//			//		Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+			//	//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			//	float x=0, y=0;
+			//	for (int j = 0; j < 4; j++)
+			//	{
+			//		x += ObjectRes[i].R[j].x;
+			//		y += ObjectRes[i].R[j].y;
+			//	}
+			//	x /= 4, y /= 4;
+			//	/*齐次坐标*/
+			//	point2D.at<float>(0, 0) = x;
+			//	point2D.at<float>(1, 0) = y;
+			//	point2D.at<float>(2, 0) = 1;
+			//	/*平均周围深度，减少误差*/
+			//	double Zc = (depthMat.at<UINT16>(y, x)
+			//		+depthMat.at<UINT16>(y+5, x)
+			//		+depthMat.at<UINT16>(y-5, x)
+			//		+depthMat.at<UINT16>(y, x-5)
+			//		+depthMat.at<UINT16>(y, x+5)
+			//		)/5;
+			//	float angle = calAngle(ObjectRes[i].R, depthMat.rows, depthMat.cols, Zc);
+			//	//平面法向量
+			//	cv::Mat rotationMatrix = calRotationMatrix(ObjectRes[i].R, 0.6);
+			//	cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(rotationMatrix);
+			//	cout << "物体的旋转矩阵为" << endl;
+			//	cout << rotationMatrix << endl;
+
+
+			//	cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
+			//	
+			//	cout << "坐标为:" << endl;
+			//	cout << point3D << endl;
+			//	cout << "物体的欧拉角为" << endl;
+			//	cout << eulerAngles << endl;
+			//	
+			//	float coords[12];
+			//	coords[0] = point3D.at<float>(0, 0);
+			//	coords[1] = point3D.at<float>(1, 0);
+			//	coords[2] = point3D.at<float>(2, 0) - 2;
+			//	coords[3] = eulerAngles[0];
+			//	coords[4] = eulerAngles[1];
+			//	coords[5] = eulerAngles[2];
+			//	coords[6] = 698 + 50;
+			//	coords[7] = 342 - 750 + cnt * 220;
+			//	cnt++;
+			//
+			//	if(coords[2] > 160)
+			//		coords[8] = 160 - 50;
+			//	else
+			//		coords[8] = coords[2] - 50;
+			//	coords[9] = 0;
+			//	coords[10] = 0;
+			//	coords[11] = 0;
+
+			//	if(useRobot)
+			//		sr->moveRobot(coords);
+
+			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 	}
 return 0;
 }
@@ -724,8 +693,8 @@ int mainold()
 	Homo_cam2base = Homo_cam2base.inv();
 	fs2.release();
 	/*讲单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
-	cv::Mat R_cam2base, t_cam2base;
-	HomogeneousMtr2RT(Homo_cam2base, R_cam2base, t_cam2base);
+	cv::Mat color_R_cam2base, color_t_cam2base;
+	HomogeneousMtr2RT(Homo_cam2base, color_R_cam2base, color_t_cam2base);
 
 
 	while(1)
