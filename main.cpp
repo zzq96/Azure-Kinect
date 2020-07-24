@@ -552,8 +552,7 @@ int main()
 			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 			//kinect.ShowOpenCVImage(depthcolorMatOld, "depthcolor");
 			//将depth转化为color视角
-			cv::Mat depthMatRevise(colorMat.rows, colorMat.cols, CV_16UC1, cv::Scalar(0)), \
-				depthcolorMatRevise(colorMat.rows, colorMat.cols, CV_8UC4, cv::Scalar(0));
+			cv::Mat colorMatRevise(depthMat.rows, depthMat.cols, CV_8UC4, cv::Scalar(0));
 
 			for(int i = 0; i < depthMat.rows;i++)
 				for (int j = 0; j < depthMat.cols; j++)
@@ -569,15 +568,14 @@ int main()
 					int new_i = point2D.at<float>(0, 1), new_j = point2D.at<float>(0, 0);
 					if (new_i >= 0 && new_j >= 0 && new_i < colorMat.rows && new_j < colorMat.cols)
 					{
-						depthMatRevise.at<UINT16>(new_i, new_j) = depthMat.at<UINT16>(i, j);
+						colorMatRevise.at<UINT32>(i, j) = colorMat.at<UINT32>(new_i, new_j);
 						//cout << depthcolorMat.at<UINT32>(new_i, new_j) << endl;
-						depthcolorMatRevise.at<UINT32>(new_i, new_j) = depthcolorMat.at<UINT32>(i, j);
 					}
 				}
 
-			kinect.ShowOpenCVImage(depthcolorMat, "img_color");
-			kinect.ShowOpenCVImage(depthcolorMatRevise, "img_color");
 			kinect.ShowOpenCVImage(colorMat, "img_color");
+			kinect.ShowOpenCVImage(colorMatRevise, "img_color");
+			kinect.ShowOpenCVImage(depthcolorMat, "img_color");
 			//int iObj_num = ObjectLocation(colorCameraMatrix, (UINT16*)colorMat.data, iDistance, depthMatRevise.cols, depthMatRevise.rows,0, depthMatRevise.rows, ObjectRes);
 			//DeleteBadObejct(ObjectRes, iObj_num);
 			//按高度从高到低排序
