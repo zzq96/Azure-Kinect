@@ -19,11 +19,12 @@
 #include"SocketRobot.h"
 
 const double PI = 3.1415926;
-cv::Mat depthMatOld, depthMat, colorMat, depthcolorMat,  depthcolorMatOld, irMat, ircolorMat;
+cv::Mat depthMatOld, depthMat, colorMatOld,colorMat, depthcolorMat,  depthcolorMatOld, irMat, ircolorMat;
 //深度值经过外参校正后的深度图像
 cv::Mat depthMatRevise;
 Object ObjectRes[10];
 cv::Mat depthCameraMatrix, depthDistCoeffs;
+cv::Mat colorCameraMatrix, colorDistCoeffs;
 cv::Mat R_cam2base, t_cam2base;
 bool shang = TRUE;
 // Checks if a matrix is a valid rotation matrix.
@@ -476,13 +477,22 @@ int main()
 	string caliberation_camera_file = "caliberation_camera.xml";
 	string Homo_cam2base_file = "Homo_cam2base.xml";
 	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
-	fs["cameraMatrix"] >> depthCameraMatrix;
+	//读取深度图的内参矩阵
+	fs["depth_cameraMatrix"] >> depthCameraMatrix;
 	depthCameraMatrix.convertTo(depthCameraMatrix, CV_32F);
 	cout << depthCameraMatrix.type() << endl;
-	fs["distCoeffs"] >> depthDistCoeffs;
+	fs["depth_distCoeffs"] >> depthDistCoeffs;
 	cout << "depthCameraMatrix" << depthCameraMatrix << endl;
-	cout << "disCoeffs" << depthDistCoeffs << endl;
+	cout << "depthdisCoeffs" << depthDistCoeffs << endl;
+	//读取color图的内参矩阵
+	fs["color_cameraMatrix"] >> colorCameraMatrix;
+	colorCameraMatrix.convertTo(colorCameraMatrix, CV_32F);
+	cout << colorCameraMatrix.type() << endl;
+	fs["color_distCoeffs"] >> colorDistCoeffs;
+	cout << "colorCameraMatrix" << colorCameraMatrix << endl;
+	cout << "colordisCoeffs" << colorDistCoeffs << endl;
 	fs.release();
+
 	cv::FileStorage fs2(Homo_cam2base_file, cv::FileStorage::READ); //读取相机与基座的转化关系XML文件  
 	cv::Mat Homo_cam2base;
 	fs2["Homo_cam2base"] >> Homo_cam2base;
@@ -532,11 +542,13 @@ int main()
 	while(1)
 	{ 
 		{
-			kinect.GetOpenCVImage(colorMat, depthMatOld, depthcolorMatOld, irMat, FALSE);
+			kinect.GetOpenCVImage(colorMatOld, depthMatOld, depthcolorMatOld, irMat, FALSE);
 			//kinect.ShowOpenCVImage(depthcolorMatOld, "old");
 			/*根据内参和畸变系数校正图像*/
 			undistort(depthMatOld,depthMat,depthCameraMatrix,depthDistCoeffs);  
 			undistort(depthcolorMatOld,depthcolorMat,depthCameraMatrix,depthDistCoeffs);  
+			undistort(colorMatOld,colorMat,colorCameraMatrix,colorDistCoeffs);  
+			kinect.ShowOpenCVImage(colorMat, "color");
 			depthMatRevise = depthMat.clone();
 			int tmp = 0;
 			for (int h = 0; h < depthMat.rows; h++)
@@ -585,6 +597,39 @@ int main()
 				//cout << "退出" << endl;
 				//break;
 			}
+			////现在有两个快递A，B。用vector数组储存他们的点
+			//vector<Point> A;
+			//vector<Point> B;
+
+			////这里的x，y对应图片的第x列，第y行
+			////输入快递A的点集
+			//for(int x = 100; x < 200; x++)
+			//	for(int y = 1; y < 100;y++)
+			//		A.push_back(Point(x, y));
+			////输入快递B的点集
+			//for(int x = 300; x < 400; x++)
+			//	for(int y = 50; y < 100;y++)
+			//		B.push_back(Point(x, y));
+
+			////创建一个二维数组P
+			//vector<vector<Point>> P;
+
+			////将A,B快递的点集push到这个二维数组里面
+			//P.push_back(A);
+			//P.push_back(B);
+
+			////depthcolorMat是opencv的mat类型，depthcolorMat.data就是一个BYTE型的数组
+			////这里的depthcolorMat是BGRA的四通道，所以第四个参数channel=4，
+			////0,0,255即为红色
+			//Draw_MBRsOfPoints(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  P, 0, 0, 255);
+
+			////显示图片
+			//cv::namedWindow("name", CV_WINDOW_NORMAL);  
+			//cv::setWindowProperty("name", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+			//cv::imshow("name",depthcolorMat);
+			//cv::waitKey(0);
+			//cv::destroyAllWindows();
+
 			for (int i = 0; i < iObj_num; i++)
 			{
 				if(i == 0)

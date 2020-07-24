@@ -1,19 +1,34 @@
 <?xml version="1.0"?>
 <opencv_storage>
 <zConst>100.</zConst>
-<cameraMatrix type_id="opencv-matrix">
+<depth_cameraMatrix type_id="opencv-matrix">
   <rows>3</rows>
   <cols>3</cols>
-  <dt>d</dt>
+  <dt>f</dt>
   <data>
     5.059864878466269e+02 0. 3.3475196071936839e+02 0.
-    5.0557190584844482e+02 3.3316442179972146e+02 0. 0. 1.</data></cameraMatrix>
-<distCoeffs type_id="opencv-matrix">
+    5.0557190584844482e+02 3.3316442179972146e+02 0. 0. 1.</data></depth_cameraMatrix>
+<depth_distCoeffs type_id="opencv-matrix">
   <rows>1</rows>
   <cols>5</cols>
-  <dt>d</dt>
+  <dt>f</dt>
   <data>
     -3.26117e-01 1.20042e-01
     1.61e-04 2.16e-04
-    0</data></distCoeffs>
+    0</data></depth_distCoeffs>
+<color_cameraMatrix type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>3</cols>
+  <dt>f</dt>
+  <data>
+    6.096504878466269e+02 0. 6.3951896071936839e+02 0.
+    6.0946990584844482e+02 3.5719042179972146e+02 0. 0. 1.</data></color_cameraMatrix>
+<color_distCoeffs type_id="opencv-matrix">
+  <rows>1</rows>
+  <cols>5</cols>
+  <dt>f</dt>
+  <data>
+    0.080723 -0.025666
+    -0.003451 0.000155
+    0</data></color_distCoeffs>
 </opencv_storage>
