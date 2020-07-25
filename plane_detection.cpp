@@ -3,7 +3,7 @@
 #include <iomanip> // output double value precision
 
 cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, double*& center, 
-	double*& normal, float& minAreaRectAngle, vector<VertexType>& highestPlanePoints_3D) {
+	double*& normal, float& minAreaRectAngle, vector<VertexType>& highestPlanePoints_3D, cv::Point2f * vertices) {
 	int start_x = 236;
 	int start_y = 0;
 	int roi_width = 260;
@@ -14,7 +14,7 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, double*& center,
 	plane_detection.readDepthImage(depthSrc, roi);
 	plane_detection.readColorImage(colorSrc, roi);
 
-	plane_detection.runPlaneDetection();
+	plane_detection.runPlaneDetection(vertices);
 
 	center = new double[3];
 	normal = new double[3];
@@ -35,6 +35,7 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, double*& center,
 	double x = 0, y = 0, z = 0;
 	for (int i = 0; i < highestPlanePoints.size(); ++i) {
 		plane_detection.cloud.get(highestPlanePoints[i].first, highestPlanePoints[i].second, x, y, z);
+		if(((x - center[0])*(x - center[0])+(y - center[1])*(y - center[1])+(z - center[2])*(z - center[2]))<900)
 		highestPlanePoints_3D.push_back(VertexType(x, y, z));
 	}
 
@@ -149,7 +150,7 @@ bool PlaneDetection::readDepthImage(cv::Mat src, cv::Rect roi)
 	return true;
 }
 
-bool PlaneDetection::runPlaneDetection()
+bool PlaneDetection::runPlaneDetection(cv::Point2f * vertices)
 {
 	seg_img_ = cv::Mat(kDepthHeight, kDepthWidth, CV_8UC3);
 	plane_filter.run(&cloud, &plane_vertices_, &seg_img_);
@@ -164,7 +165,7 @@ bool PlaneDetection::runPlaneDetection()
 		for (int j = 0; j < 3; ++j)
 			center += to_string(plane_filter.extractedPlanes[i]->center[j]) + " ";*/
 
-		cv::Point2f vertices[4];
+		//cv::Point2f vertices[4];
 		rectangles[i].points(vertices);
 		for (int j = 0; j < 4; ++j) {
 			line(color_img_, vertices[j], vertices[(j + 1) % 4], cv::Scalar(0, 0, 255), 2, cv::LINE_AA);
@@ -177,7 +178,7 @@ bool PlaneDetection::runPlaneDetection()
 	for (int j = 0; j < 2; ++j)
 		center += to_string((int)plane_filter.extractedPlanes[plane_filter.highestPlane.first]->center[j]) + ", ";
 	center += to_string((int)plane_filter.extractedPlanes[plane_filter.highestPlane.first]->center[2]) + ")";*/
-	cv::Point2f vertices[4];
+	//cv::Point2f vertices[4];
 	rectangles[plane_filter.highestPlane.first].points(vertices);
 	for (int j = 0; j < 4; ++j) {
 		line(color_img_, vertices[j], vertices[(j + 1) % 4], cv::Scalar(0, 255, 0), 2, cv::LINE_AA);

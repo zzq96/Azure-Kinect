@@ -135,8 +135,8 @@ bool compareByHeight(Object a, Object b)
 	UINT16 aDepth = getDepth(aM);
 	UINT16 bDepth = getDepth(bM);
 	//根据外参计算到机械臂坐标系
-	cv::Mat a3D = color_R_cam2base.t() * (depthCameraMatrix.inv() * aDepth * aM - color_t_cam2base);
-	cv::Mat b3D = color_R_cam2base.t() * (depthCameraMatrix.inv() * bDepth * bM - color_t_cam2base);
+	cv::Mat a3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * aDepth * aM - depth_t_cam2base);
+	cv::Mat b3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * bDepth * bM - depth_t_cam2base);
 	return a3D.at<float>(2, 0) > b3D.at<float>(2, 0);
 }
 bool compareByArea(Object a, Object b)
@@ -180,7 +180,7 @@ cv::Mat RT2HomogeneousMatrix(const cv::Mat& R,const cv::Mat& T)
 void calPoint3D(cv::Mat point2D, cv::Point3f & real, UINT16 Zc)
 {
 	assert(Zc != 0);
-	cv::Mat point3D = color_R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - color_t_cam2base);
+	cv::Mat point3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_cam2base);
 	real.x = point3D.at<float>(0, 0);
 	real.y = point3D.at<float>(1, 0);
 	real.z = point3D.at<float>(2, 0);
@@ -689,11 +689,11 @@ int main()
 	fs2["depth_Homo_cam2base"] >> depth_Homo_cam2base;
 	cout << "depth_Homo_cam2base" << depth_Homo_cam2base << endl;
 	/*为什么要求逆？*/
-	color_Homo_cam2base = color_Homo_cam2base.inv();
-	//depth_Homo_cam2base = depth_Homo_cam2base.inv();
+	//color_Homo_cam2base = color_Homo_cam2base.inv();
+	depth_Homo_cam2base = depth_Homo_cam2base.inv();
 	fs2.release();
 	/*将单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
-	HomogeneousMtr2RT(color_Homo_cam2base, color_R_cam2base, color_t_cam2base);
+	HomogeneousMtr2RT(depth_Homo_cam2base, depth_R_cam2base, depth_t_cam2base);
 
 	SocketRobot* sr = NULL;
 	if (useRobot)
@@ -754,44 +754,51 @@ int main()
 			float angle;
 
 			vector<VertexType> highestPlanePoints_3D;
-			cv::imshow("result", processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D));
-			cv::Mat Points_3D = cv::Mat_<float>(highestPlanePoints_3D.size(), 3);
-			for (int i = 0; i < highestPlanePoints_3D.size(); i++)
+			vector<Point> R;
+			cv::Point2f vertices[4];
+			cv::imshow("result", processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices));
+			for (int i = 0; i < 4; i++)
 			{
-				Points_3D.at<float>(i, 0) = highestPlanePoints_3D[i].x();
-				Points_3D.at<float>(i, 1) = highestPlanePoints_3D[i].y();
-				Points_3D.at<float>(i, 2) = highestPlanePoints_3D[i].z();
+				R.push_back(Point(vertices[i].x, vertices[i].y));
 			}
-			cv::PCA pca(Points_3D, cv::Mat(), CV_PCA_DATA_AS_ROW, 3);
-			pca.eigenvectors.convertTo(pca.eigenvectors, CV_32F);
-			cv::Mat eigenvectors  = pca.eigenvectors;
-			cout << eigenvectors << endl;
-			cv::Mat vector_z = eigenvectors.rowRange(0, 1).cross(eigenvectors.rowRange(1, 2)).reshape(0, 3);
-			vector_z.copyTo(eigenvectors.col(2));
-			cout << eigenvectors.rowRange(0, 1).cross(eigenvectors.rowRange(1, 2)) << endl;
-			cout << eigenvectors << endl;
-			cv::Mat centerMat = (cv::Mat_<float>(3, 1) << center[0], center[1], center[2]);
-			cout << centerMat << endl;
-			cv::Mat express2depthHomo = RT2HomogeneousMatrix(eigenvectors, centerMat);
-			cout << depth_Homo_cam2base << " " << express2depthHomo << endl;
-			cv::Mat express2roboticHomo = depth_Homo_cam2base * express2depthHomo;
-			cout << express2roboticHomo << endl;
-			cv::Mat express2roboticRotation, express2roboticTranslation;
-			HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
-			if (express2roboticRotation.at<float>(2, 2) < 0)
-			{
-				express2roboticRotation.at<float>(2, 2) *= -1;
-				express2roboticRotation.at<float>(1, 2) *= -1;
-				express2roboticRotation.at<float>(0, 2) *= -1;
-			}
-			cv::Mat vector_y = express2roboticRotation.rowRange(0, 1).cross(express2roboticRotation.rowRange(2, 3)).reshape(0, 3);
-			vector_y.copyTo(express2roboticRotation.col(1));
-			cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(express2roboticRotation);
-			cout << "坐标为" << endl;
-			cout << express2roboticTranslation << endl;
-			cout << "欧拉角为" << endl;
-			cout << eulerAngles << endl;
-			cv::waitKey(0);
+
+			//cv::Mat Points_3D = cv::Mat_<float>(highestPlanePoints_3D.size(), 3);
+			//for (int i = 0; i < highestPlanePoints_3D.size(); i++)
+			//{
+			//	Points_3D.at<float>(i, 0) = highestPlanePoints_3D[i].x();
+			//	Points_3D.at<float>(i, 1) = highestPlanePoints_3D[i].y();
+			//	Points_3D.at<float>(i, 2) = highestPlanePoints_3D[i].z();
+			//}
+			//cv::PCA pca(Points_3D, cv::Mat(), CV_PCA_DATA_AS_ROW, 3);
+			//pca.eigenvectors.convertTo(pca.eigenvectors, CV_32F);
+			//cv::Mat eigenvectors  = pca.eigenvectors;
+			//cout << eigenvectors << endl;
+			//cv::Mat vector_z = eigenvectors.rowRange(0, 1).cross(eigenvectors.rowRange(1, 2)).reshape(0, 3);
+			//vector_z.copyTo(eigenvectors.col(2));
+			//cout << eigenvectors.rowRange(0, 1).cross(eigenvectors.rowRange(1, 2)) << endl;
+			//cout << eigenvectors << endl;
+			//cv::Mat centerMat = (cv::Mat_<float>(3, 1) << center[0], center[1], center[2]);
+			//cout << centerMat << endl;
+			//cv::Mat express2depthHomo = RT2HomogeneousMatrix(eigenvectors, centerMat);
+			//cout << depth_Homo_cam2base << " " << express2depthHomo << endl;
+			//cv::Mat express2roboticHomo = depth_Homo_cam2base * express2depthHomo;
+			//cout << express2roboticHomo << endl;
+			//cv::Mat express2roboticRotation, express2roboticTranslation;
+			//HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
+			//if (express2roboticRotation.at<float>(2, 2) < 0)
+			//{
+			//	express2roboticRotation.at<float>(2, 2) *= -1;
+			//	express2roboticRotation.at<float>(1, 2) *= -1;
+			//	express2roboticRotation.at<float>(0, 2) *= -1;
+			//}
+			//cv::Mat vector_y = express2roboticRotation.rowRange(0, 1).cross(express2roboticRotation.rowRange(2, 3)).reshape(0, 3);
+			//vector_y.copyTo(express2roboticRotation.col(1));
+			//cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(express2roboticRotation);
+			//cout << "坐标为" << endl;
+			//cout << express2roboticTranslation << endl;
+			//cout << "欧拉角为" << endl;
+			//cout << eulerAngles << endl;
+			//cv::waitKey(0);
 			//int iObj_num = ObjectLocation(colorCameraMatrix, (UINT16*)colorMat.data, iDistance, depthMatRevise.cols, depthMatRevise.rows,0, depthMatRevise.rows, ObjectRes);
 			//DeleteBadObejct(ObjectRes, iObj_num);
 			//按高度从高到低排序
@@ -815,77 +822,67 @@ int main()
 			////cv::waitKey(0);
 			////cv::destroyAllWindows();
 
-			//for (int i = 0; i < iObj_num; i++)
-			//{
-			//	if(i == 0)
-			//		Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 0, 0, 255);
-			//	else
-			//		Draw_Polygon(depthcolorMat.data, depthcolorMat.cols, depthcolorMat.rows, 4,  ObjectRes[i].R, 255, 0, 0);
-			//}
-			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-			////cout << "iObj_num:"<<iObj_num << endl;
-			//for (int i = 0; i < iObj_num; i++)
-			//{
-			//	if (i > 0) break;
-//			//	if(i == 0)
-//			//		Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
-			//	//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
-			//	float x=0, y=0;
-			//	for (int j = 0; j < 4; j++)
-			//	{
-			//		x += ObjectRes[i].R[j].x;
-			//		y += ObjectRes[i].R[j].y;
-			//	}
-			//	x /= 4, y /= 4;
-			//	/*齐次坐标*/
-			//	point2D.at<float>(0, 0) = x;
-			//	point2D.at<float>(1, 0) = y;
-			//	point2D.at<float>(2, 0) = 1;
-			//	/*平均周围深度，减少误差*/
-			//	double Zc = (depthMat.at<UINT16>(y, x)
-			//		+depthMat.at<UINT16>(y+5, x)
-			//		+depthMat.at<UINT16>(y-5, x)
-			//		+depthMat.at<UINT16>(y, x-5)
-			//		+depthMat.at<UINT16>(y, x+5)
-			//		)/5;
-			//	float angle = calAngle(ObjectRes[i].R, depthMat.rows, depthMat.cols, Zc);
-			//	//平面法向量
-			//	cv::Mat rotationMatrix = calRotationMatrix(ObjectRes[i].R, 0.6);
-			//	cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(rotationMatrix);
-			//	cout << "物体的旋转矩阵为" << endl;
-			//	cout << rotationMatrix << endl;
+			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			//cout << "iObj_num:"<<iObj_num << endl;
+//				if(i == 0)
+//					Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
+				//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+				float x=0, y=0;
+				for (int j = 0; j < 4; j++)
+				{
+					x += R[j].x;
+					y += R[j].y;
+				}
+				x /= 4, y /= 4;
+				/*齐次坐标*/
+				point2D.at<float>(0, 0) = x;
+				point2D.at<float>(1, 0) = y;
+				point2D.at<float>(2, 0) = 1;
+				/*平均周围深度，减少误差*/
+				double Zc = (depthMat.at<UINT16>(y, x)
+					+depthMat.at<UINT16>(y+5, x)
+					+depthMat.at<UINT16>(y-5, x)
+					+depthMat.at<UINT16>(y, x-5)
+					+depthMat.at<UINT16>(y, x+5)
+					)/5;
+				angle = calAngle(R, depthMat.rows, depthMat.cols, Zc);
+				//平面法向量
+				cv::Mat rotationMatrix = calRotationMatrix(R, 0.6);
+				cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(rotationMatrix);
+				cout << "物体的旋转矩阵为" << endl;
+				cout << rotationMatrix << endl;
 
 
-			//	cv::Mat point3D = R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - t_cam2base);
-			//	
-			//	cout << "坐标为:" << endl;
-			//	cout << point3D << endl;
-			//	cout << "物体的欧拉角为" << endl;
-			//	cout << eulerAngles << endl;
-			//	
-			//	float coords[12];
-			//	coords[0] = point3D.at<float>(0, 0);
-			//	coords[1] = point3D.at<float>(1, 0);
-			//	coords[2] = point3D.at<float>(2, 0) - 2;
-			//	coords[3] = eulerAngles[0];
-			//	coords[4] = eulerAngles[1];
-			//	coords[5] = eulerAngles[2];
-			//	coords[6] = 698 + 50;
-			//	coords[7] = 342 - 750 + cnt * 220;
-			//	cnt++;
-			//
-			//	if(coords[2] > 160)
-			//		coords[8] = 160 - 50;
-			//	else
-			//		coords[8] = coords[2] - 50;
-			//	coords[9] = 0;
-			//	coords[10] = 0;
-			//	coords[11] = 0;
+				cv::Mat point3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_cam2base);
+				
+				cout << "坐标为:" << endl;
+				cout << point3D << endl;
+				cout << "物体的欧拉角为" << endl;
+				cout << eulerAngles << endl;
+				
+				float coords[12];
+				coords[0] = point3D.at<float>(0, 0);
+				coords[1] = point3D.at<float>(1, 0);
+				coords[2] = point3D.at<float>(2, 0) - 2;
+				coords[3] = eulerAngles[0];
+				coords[4] = eulerAngles[1];
+				coords[5] = eulerAngles[2];
+				coords[6] = 698 + 50;
+				coords[7] = 342 - 750 + cnt * 220;
+				cnt++;
+			
+				if(coords[2] > 160)
+					coords[8] = 160 - 50;
+				else
+					coords[8] = coords[2] - 50;
+				coords[9] = 0;
+				coords[10] = 0;
+				coords[11] = 0;
 
-			//	if(useRobot)
-			//		sr->moveRobot(coords);
+				if(useRobot)
+					sr->moveRobot(coords);
 
-			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			//kinect.ShowOpenCVImage(colorMatRevise, "depthcolor");
 	}
 return 0;
 }

@@ -41,7 +41,7 @@ const int kDepthWidth = 640;
 const int kDepthHeight = 576;
 
 cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, double*& center, 
-	double*& normal, float& minAreaRectAngle, vector<VertexType>& highestPlanePoints_3D);
+	double*& normal, float& minAreaRectAngle, vector<VertexType>& highestPlanePoints_3D, cv::Point2f * vertices);
 
 struct ImagePointCloud
 {
@@ -101,7 +101,7 @@ public:
 
 	bool readDepthImage(cv::Mat src, cv::Rect roi);
 
-	bool runPlaneDetection();
+	bool runPlaneDetection(cv::Point2f * vertices);
 
 	void writeOutputFiles(string output_folder, string frame_name);
 
