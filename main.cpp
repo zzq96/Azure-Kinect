@@ -47,7 +47,7 @@ bool isRotationMatrix(cv::Mat &R)
 // of the euler angles ( x and z are swapped ).
 cv::Vec3f rotationMatrixToEulerAngles(cv::Mat &R)
 {
-    assert(isRotationMatrix(R));
+    //assert(isRotationMatrix(R));
 
     float sy = sqrt(R.at<float>(0,0) * R.at<float>(0,0) +  R.at<float>(1,0) * R.at<float>(1,0) );
 
@@ -763,16 +763,29 @@ int main()
 				Points_3D.at<float>(i, 2) = highestPlanePoints_3D[i].z();
 			}
 			cv::PCA pca(Points_3D, cv::Mat(), CV_PCA_DATA_AS_ROW, 3);
-			cout << pca.eigenvectors << endl;
 			pca.eigenvectors.convertTo(pca.eigenvectors, CV_32F);
+			cv::Mat eigenvectors  = pca.eigenvectors;
+			cout << eigenvectors << endl;
+			cv::Mat vector_z = eigenvectors.rowRange(0, 1).cross(eigenvectors.rowRange(1, 2)).reshape(0, 3);
+			vector_z.copyTo(eigenvectors.col(2));
+			cout << eigenvectors.rowRange(0, 1).cross(eigenvectors.rowRange(1, 2)) << endl;
+			cout << eigenvectors << endl;
 			cv::Mat centerMat = (cv::Mat_<float>(3, 1) << center[0], center[1], center[2]);
 			cout << centerMat << endl;
-			cv::Mat express2depthHomo = RT2HomogeneousMatrix(pca.eigenvectors, centerMat);
+			cv::Mat express2depthHomo = RT2HomogeneousMatrix(eigenvectors, centerMat);
 			cout << depth_Homo_cam2base << " " << express2depthHomo << endl;
 			cv::Mat express2roboticHomo = depth_Homo_cam2base * express2depthHomo;
 			cout << express2roboticHomo << endl;
 			cv::Mat express2roboticRotation, express2roboticTranslation;
 			HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
+			if (express2roboticRotation.at<float>(2, 2) < 0)
+			{
+				express2roboticRotation.at<float>(2, 2) *= -1;
+				express2roboticRotation.at<float>(1, 2) *= -1;
+				express2roboticRotation.at<float>(0, 2) *= -1;
+			}
+			cv::Mat vector_y = express2roboticRotation.rowRange(0, 1).cross(express2roboticRotation.rowRange(2, 3)).reshape(0, 3);
+			vector_y.copyTo(express2roboticRotation.col(1));
 			cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(express2roboticRotation);
 			cout << "×ø±êÎª" << endl;
 			cout << express2roboticTranslation << endl;

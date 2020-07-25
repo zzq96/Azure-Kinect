@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<depth_Homo_cam2base type_id="opencv-matrix">
+<color_Homo_cam2base type_id="opencv-matrix">
   <rows>4</rows>
   <cols>4</cols>
   <dt>f</dt>
@@ -10,8 +10,8 @@
     -2.9327084558208687e-02 -4.6087386462758950e-03
     3.8375689996494566e+02 -3.6880236686827328e-03
     3.1371705412524334e-02 -9.9950098278137256e-01
-    1.3240414627592052e+03 0. 0. 0. 1.</data></depth_Homo_cam2base>
-<color_Homo_cam2base type_id="opencv-matrix">
+    1.3240414627592052e+03 0. 0. 0. 1.</data></color_Homo_cam2base>
+<depth_Homo_cam2base type_id="opencv-matrix">
   <rows>4</rows>
   <cols>4</cols>
   <dt>f</dt>
@@ -21,5 +21,5 @@
     -2.2422007434261534e-02 4.1101511160483439e-03
     3.5015016682124605e+02 6.9277887456734161e-03
 	1.2707412311922936e-01 -9.9186903015296057e-01
-	1.3214478208789160e+03 0. 0. 0. 1.</data></color_Homo_cam2base>
+	1.3214478208789160e+03 0. 0. 0. 1.</data></depth_Homo_cam2base>
 </opencv_storage>
