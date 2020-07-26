@@ -183,14 +183,12 @@ void k4a::KinectAPI::ReleaseDevice()
     k4a_device_close(device);
 }
 //TODO:可选择
-void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name)
+void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name,int waitkey)
 {
 	cv::namedWindow("name", CV_WINDOW_NORMAL);  
 	 cv::setWindowProperty("name", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
 	cv::imshow("name", Img);
-	cv::waitKey(0);
-	cv::destroyAllWindows();
-	//cv::waitKey(1);
+	cv::waitKey(waitkey);
 	//cv::destroyAllWindows();
 }
 //depth已转到RGB相机视角

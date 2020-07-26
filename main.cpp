@@ -389,7 +389,7 @@ void DrawCenterPoints(cv::Mat& colorMat);
 //²âÊÔGetXYZAtCameraViewº¯Êý
 void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
-int main2()
+int main5()
 {
 	
 	string caliberation_camera_file = "caliberation_camera.xml";
@@ -484,8 +484,8 @@ int main2()
 			//cout << endl;
 			//cout << "finished ori" << endl;
 
-			kinect.ShowOpenCVImage(colorMatRevise, "color");
-			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			kinect.ShowOpenCVImage(colorMatRevise, "color", 0);
+			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor", 0);
 			//kinect.ShowOpenCVImage(irMat_, "ir");
 			while (1)
 			{
@@ -557,7 +557,7 @@ int main2()
 	}
     return 0;
 }
-int main1()
+int main2()
 {
 	
 	cv::Mat cameraMatrix, disCoeffs;
@@ -585,8 +585,8 @@ int main1()
 			//cout << endl;
 			//cout << "finished ori" << endl;
 
-			kinect.ShowOpenCVImage(colorMat, "color");
-			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			kinect.ShowOpenCVImage(colorMat, "color", 0);
+			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor", 0);
 			//kinect.ShowOpenCVImage(irMat_, "ir");
 			while (1)
 			{
@@ -756,7 +756,7 @@ int main()
 			vector<VertexType> highestPlanePoints_3D;
 			vector<Point> R;
 			cv::Point2f vertices[4];
-			cv::imshow("result", processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices));
+			colorMatRevise = processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices);
 			for (int i = 0; i < 4; i++)
 			{
 				R.push_back(Point(vertices[i].x, vertices[i].y));
@@ -822,7 +822,7 @@ int main()
 			////cv::waitKey(0);
 			////cv::destroyAllWindows();
 
-			kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+			//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor", 0);
 			//cout << "iObj_num:"<<iObj_num << endl;
 //				if(i == 0)
 //					Draw_Convex(depthcolorMat, depthcolorMat.cols, depthcolorMat.rows, ObjectRes[i].R);
@@ -882,7 +882,7 @@ int main()
 				if(useRobot)
 					sr->moveRobot(coords);
 
-			//kinect.ShowOpenCVImage(colorMatRevise, "depthcolor");
+			kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", 1);
 	}
 return 0;
 }
@@ -1005,7 +1005,7 @@ int mainold()
 				Point3D.z += -robot_z + robot_len;
 				cout <<"real_robot:"<< "x:" << Point3D.x << " " << "y:" << Point3D.y << " " << "z:" << Point3D.z << endl;
 			}
-				kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
+				kinect.ShowOpenCVImage(depthcolorMat, "depthcolor", 0);
 		}
 		shang = !shang;
 	}
@@ -1045,7 +1045,7 @@ void TestGetXYZAtCameraView()
 		{
 			Draw_Polygon(img_depthcolor.data, img_depthcolor.cols, img_depthcolor.rows, 4, ObjectRes[i].R, 0, 0, 255);
 		}
-		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor");
+		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor", 0);
 	}
 }
 void DrawCenterPoints(cv::Mat& colorMat)
