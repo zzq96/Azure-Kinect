@@ -408,7 +408,7 @@ void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
 int main()
 {
-	bool useRobot = TRUE;
+	bool useRobot = true;
 	
 	string caliberation_camera_file = "caliberation_camera.xml";
 	string Homo_cam2base_file = "Homo_cam2base.xml";
@@ -606,12 +606,13 @@ int main()
 				float coords[12];
 				coords[0] = point3D.at<float>(0, 0);
 				coords[1] = point3D.at<float>(1, 0);
-				coords[2] = point3D.at<float>(2, 0);
+				coords[2] = point3D.at<float>(2, 0) - 2;
 				coords[3] = eulerAngles[0];
 				coords[4] = eulerAngles[1];
 				coords[5] = eulerAngles[2];
 				coords[6] = 698 + 50;
-				coords[7] = 342 - 750 + cnt * 220;
+				//coords[7] = 342 - 750 + cnt * 220;
+				coords[7] = 0;
 				cnt++;
 			
 				if(coords[2] > 160)

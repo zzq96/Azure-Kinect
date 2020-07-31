@@ -154,7 +154,7 @@ namespace ahc {
 		/************************************************************************/
 		PlaneFitter() : points(0), width(0), height(0),
 			maxStep(100000), minSupport(2500),
-			windowWidth(5), windowHeight(5),
+			windowWidth(10), windowHeight(10),
 			doRefine(true), erodeType(ERODE_ALL_BORDER),
 			dirtyBlkMbship(true), drawCoarseBorder(false)
 		{
@@ -197,7 +197,7 @@ namespace ahc {
 			cv::Mat element = getStructuringElement(0,
 				cv::Size(5, 5),
 				cv::Point(-1, -1));
-			erode(src, src, cv::Mat(), cv::Point(-1, -1));
+			erode(src, src, element, cv::Point(-1, -1));
 			dilate(src, src, element, cv::Point(-1, -1));
 			threshold(src, src, 0, 255, cv::THRESH_BINARY);
 			std::vector<std::vector<cv::Point>> contours;
@@ -391,8 +391,8 @@ namespace ahc {
 				matPerPlane[i] = cv::Mat::zeros(this->height, this->width, CV_8UC1);				
 			}
 
-			//static const cv::Vec3b blackColor(0,0,0);
-			//static const cv::Vec3b whiteColor(255, 255, 255);
+			static const cv::Vec3b blackColor(0,0,0);
+			static const cv::Vec3b whiteColor(255, 255, 255);
 			const int nPixels=this->width*this->height;
 			for(int i=0; i<this->height; ++i) {
 				for (int j = 0; j < this->width; ++j) {
@@ -404,7 +404,7 @@ namespace ahc {
 						}
 						matPerPlane[plidmap[plid]].at<uchar>(i, j) = 255;
 						/*plid=plidmap[plid];
-						if(pSeg) pSeg->at<cv::Vec3b>(i)=this->colors[plid];
+						if(pSeg) pSeg->at<cv::Vec3b>(i, j)=this->colors[plid];
 						if(pMembership) pMembership->at(plid).push_back(
 							pIdxMap?pIdxMap->at(i):i);
 					} else {
