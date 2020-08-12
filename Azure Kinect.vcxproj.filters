@@ -39,6 +39,9 @@
     <ClCompile Include="plane_detection.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="flask.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="k4a_grabber.h">
@@ -57,6 +60,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="plane_detection.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="flask.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

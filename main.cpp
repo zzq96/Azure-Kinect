@@ -18,6 +18,7 @@
 #include <fstream>
 #include"Function_SHUJING.h"
 #include"SocketRobot.h"
+#include "flask.h"
 
 const double PI = 3.1415926;
 cv::Mat depthMat,colorMat, depthcolorMat, irMat, ircolorMat;
@@ -497,6 +498,10 @@ int main()
 			vector<VertexType> highestPlanePoints_3D;
 			vector<Point> R;
 			cv::Point2f vertices[4];
+			vector<vector<cv::Point2d>> masks;
+			getMask(colorMatRevise,  masks);
+			cout << "有几个快递" << endl;
+			cout << masks.size() << endl;
 			string name = "imgs/img" + std::to_string(cnt);
 			colorMatRevise = processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices);
 			kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
