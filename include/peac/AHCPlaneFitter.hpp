@@ -50,7 +50,6 @@
 namespace ahc {
 	using ahc::utils::Timer;
 	using ahc::utils::pseudocolor;
-
 	/**
 	 *  \brief An example of Image3D struct as an adaptor for any kind of point cloud to be used by our ahc::PlaneFitter
 	 *  
@@ -317,6 +316,13 @@ namespace ahc {
 			const std::vector<int> * const pIdxMap, //if pIdxMap!=0 pMembership->at(i).at(j)=pIdxMap(pixIdx)
 			cv::Mat* pSeg)
 		{
+			cv::Mat depth_Homo_cam2base	 =(cv::Mat_<double>(4,4)<<2.1717400918944269e-02, 9.9163976363198392e-01, 1.2719643737632352e-01,
+    2.9420400367679542e+02, 9.9974014635825281e-01,
+    -2.2422007434261534e-02, 4.1101511160483439e-03,
+    3.5015016682124605e+02, 6.9277887456734161e-03,
+	1.2707412311922936e-01, -9.9186903015296057e-01,
+	1.3214478208789160e+03, 0., 0., 0. ,1.);
+	std::cout<<depth_Homo_cam2base<<std::endl;
 			if(pMembership==0 && pSeg==0) return;
 			std::vector<bool> isValidExtractedPlane; //some planes might be eroded completely
 			this->findBlockMembership(isValidExtractedPlane);
@@ -369,7 +375,22 @@ namespace ahc {
 			lowestPlane.first = 0, highestPlane.first = 0;
 			lowestPlane.second = this->extractedPlanes[0]->center[2];
 			highestPlane.second = this->extractedPlanes[0]->center[2];
+			cv::Mat point3d;
 			for (int i = 1; i < (int)this->extractedPlanes.size(); ++i) {
+				point3d = (cv::Mat_<double>(4,1)<<this->extractedPlanes[i]->center[0],
+				this->extractedPlanes[i]->center[1],
+				this->extractedPlanes[i]->center[2],1);
+				point3d = -depth_Homo_cam2base * point3d;
+				std::cout<<"Height:"<< point3d.at<double>(2,0)<<std::endl;
+				if (point3d.at<double>(2, 0) > lowestPlane.second) {
+					lowestPlane.first = i;
+					lowestPlane.second = point3d.at<double>(2, 0);
+				}
+				if (point3d.at<double>(2, 0) < highestPlane.second) {
+					highestPlane.first = i;
+					highestPlane.second = point3d.at<double>(2, 0);
+				}
+				/*
 				if (this->extractedPlanes[i]->center[2] > lowestPlane.second) {
 					lowestPlane.first = i;
 					lowestPlane.second = this->extractedPlanes[i]->center[2];
@@ -377,7 +398,7 @@ namespace ahc {
 				if (this->extractedPlanes[i]->center[2] < highestPlane.second) {
 					highestPlane.first = i;
 					highestPlane.second = this->extractedPlanes[i]->center[2];
-				}
+				}*/
 			}
 
 			//scan membershipImg

@@ -498,7 +498,7 @@ int main()
 			vector<Point> R;
 			cv::Point2f vertices[4];
 			string name = "imgs/img" + std::to_string(cnt);
-			colorMatRevise = processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices);
+			colorMatRevise = processImg(colorMatRevise, depthMat, depth_Homo_cam2base, center, normal, angle, highestPlanePoints_3D, vertices);
 			kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
 
 			cv::imwrite(name + "_depth.png", depthMat);
