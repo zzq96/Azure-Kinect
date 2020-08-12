@@ -6,8 +6,8 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, double*& center,
 	double*& normal, float& minAreaRectAngle, vector<VertexType>& highestPlanePoints_3D, cv::Point2f * vertices) {
 	int start_x = 236;
 	int start_y = 0;
-	int roi_width = 260;
-	int roi_height = 340;
+	int roi_width = 280;
+	int roi_height = 360;
 	cv::Rect roi = cv::Rect(start_x, start_y, roi_width, roi_height);
 
 	PlaneDetection plane_detection;

@@ -65,19 +65,29 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat &R)
     }
     return cv::Vec3f(z, y, x) / CV_PI * 180;   
 }
+double getDepthValue(cv::Mat depthMat,int row, int col, int size)
+{
+	int rows = depthMat.rows, cols = depthMat.cols;
+	double sum = 0;
+	int cnt = 0;
+	for (int r = max(0, row - size); r <= min(rows - 1, row + size); r++)
+	{
+		for (int c = max(0, col - size); c <= min(cols - 1, col + size); c++)
+		if(depthMat.at<UINT16>(r, c) != 0)
+		{
+			cnt++;
+			sum += depthMat.at<UINT16>(r, c);
+		}
+	}
+	assert(cnt);
+	return sum / cnt;
+}
 UINT16 getDepth(cv::Mat point2D)
 {
 	int x = (int)point2D.at<float>(0, 0);
 	int y = (int)point2D.at<float>(1, 0);
+	UINT16 Zc = getDepthValue(depthMat, y, x, 6); 
 	//TODO:加入边界判断
-	if (x < 0) x = 1;
-	if (y < 0) y = 1;
-	UINT16 Zc = (depthMat.at<UINT16>(y, x)
-		+depthMat.at<UINT16>(y+1, x)
-		+depthMat.at<UINT16>(y-1, x)
-		+depthMat.at<UINT16>(y, x-1)
-		+depthMat.at<UINT16>(y, x+1)
-		)/5.;
 	return Zc;
 }
 float getLength(cv::Mat a)
@@ -384,23 +394,6 @@ void DeleteBadObejct(Object *ObjectRes, int &iObj_num)
 		}
 	}
 }
-double getDepthValue(cv::Mat depthMat,int row, int col, int size)
-{
-	int rows = depthMat.rows, cols = depthMat.cols;
-	double sum = 0;
-	int cnt = 0;
-	for (int r = max(0, row - size); r <= min(rows - 1, row + size); r++)
-	{
-		for (int c = max(0, col - size); c <= min(cols - 1, col + size); c++)
-		if(depthMat.at<UINT16>(r, c) != 0)
-		{
-			cnt++;
-			sum += depthMat.at<UINT16>(r, c);
-		}
-	}
-	assert(cnt);
-	return sum / cnt;
-}
 //把中心点涂黑，方便找到桌面上的（0,0）点
 void DrawCenterPoints(cv::Mat& colorMat);
 //测试GetXYZAtCameraView函数
@@ -502,12 +495,13 @@ int main()
 			vector<VertexType> highestPlanePoints_3D;
 			vector<Point> R;
 			cv::Point2f vertices[4];
+			string name = "imgs/img" + std::to_string(cnt);
+			cv::imwrite(name + "_color.png", colorMatRevise);
 			colorMatRevise = processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices);
 			kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", 0);
 
-			string name = "imgs/img" + std::to_string(cnt);
 			cv::imwrite(name + "_depth.png", depthMat);
-			cv::imwrite(name + "_depthcolorMat.png", colorMatRevise);
+			cv::imwrite(name + "_depthcolor.png", colorMatRevise);
 			for (int i = 0; i < 4; i++)
 			{
 				R.push_back(Point(vertices[i].x, vertices[i].y));
@@ -591,7 +585,7 @@ int main()
 				point2D.at<float>(2, 0) = 1;
 				/*平均周围深度，减少误差*/
 				
-				double Zc = getDepthValue(depthMat, y, x, 5); 
+				double Zc = getDepthValue(depthMat, y, x, 6); 
 				angle = calAngle(R, depthMat.rows, depthMat.cols, Zc);
 				//平面法向量
 				cv::Mat rotationMatrix = calRotationMatrix(R, 0.6);
