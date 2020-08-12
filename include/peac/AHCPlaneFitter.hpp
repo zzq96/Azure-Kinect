@@ -202,8 +202,15 @@ namespace ahc {
 			threshold(src, src, 0, 255, cv::THRESH_BINARY);
 			std::vector<std::vector<cv::Point>> contours;
 			findContours(src, contours, cv::RETR_TREE, cv::CHAIN_APPROX_NONE, cv::Point());
+			int max = 0, index = 0;
+			for (int i = 0; i < contours.size(); ++i) {
+				if (contours[i].size() > max) {
+					max = contours[i].size();
+					index = i;
+				}
+			}
 			cv::RotatedRect minRect;
-			minRect = cv::minAreaRect(cv::Mat(contours[0]));
+			minRect = cv::minAreaRect(cv::Mat(contours[index]));
 			return minRect;
 		}
 

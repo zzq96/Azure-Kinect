@@ -28,6 +28,8 @@ cv::Mat depthMatRevise;
 Object ObjectRes[10];
 cv::Mat depthCameraMatrix, depthDistCoeffs;
 cv::Mat colorCameraMatrix, colorDistCoeffs;
+cv::Mat color_R_base2cam, color_t_base2cam;
+cv::Mat depth_R_base2cam, depth_t_base2cam;
 cv::Mat color_R_cam2base, color_t_cam2base;
 cv::Mat depth_R_cam2base, depth_t_cam2base;
 bool shang = TRUE;
@@ -145,8 +147,8 @@ bool compareByHeight(Object a, Object b)
 	UINT16 aDepth = getDepth(aM);
 	UINT16 bDepth = getDepth(bM);
 	//根据外参计算到机械臂坐标系
-	cv::Mat a3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * aDepth * aM - depth_t_cam2base);
-	cv::Mat b3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * bDepth * bM - depth_t_cam2base);
+	cv::Mat a3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * aDepth * aM - depth_t_base2cam);
+	cv::Mat b3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * bDepth * bM - depth_t_base2cam);
 	return a3D.at<float>(2, 0) > b3D.at<float>(2, 0);
 }
 bool compareByArea(Object a, Object b)
@@ -190,7 +192,7 @@ cv::Mat RT2HomogeneousMatrix(const cv::Mat& R,const cv::Mat& T)
 void calPoint3D(cv::Mat point2D, cv::Point3f & real, UINT16 Zc)
 {
 	assert(Zc != 0);
-	cv::Mat point3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_cam2base);
+	cv::Mat point3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
 	real.x = point3D.at<float>(0, 0);
 	real.y = point3D.at<float>(1, 0);
 	real.z = point3D.at<float>(2, 0);
@@ -430,10 +432,10 @@ int main()
 	cout << "depth_Homo_cam2base" << depth_Homo_cam2base << endl;
 	/*为什么要求逆？*/
 	//color_Homo_cam2base = color_Homo_cam2base.inv();
-	depth_Homo_cam2base = depth_Homo_cam2base.inv();
+	cv::Mat depth_Homo_base2cam = depth_Homo_cam2base.inv();
 	fs2.release();
 	/*将单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
-	HomogeneousMtr2RT(depth_Homo_cam2base, depth_R_cam2base, depth_t_cam2base);
+	HomogeneousMtr2RT(depth_Homo_base2cam, depth_R_base2cam, depth_t_base2cam);
 
 	SocketRobot* sr = NULL;
 	if (useRobot)
@@ -594,7 +596,7 @@ int main()
 				cout << rotationMatrix << endl;
 
 
-				cv::Mat point3D = depth_R_cam2base.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_cam2base);
+				cv::Mat point3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
 				
 				cout << "坐标为:" << endl;
 				cout << point3D << endl;
