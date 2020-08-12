@@ -408,7 +408,7 @@ void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
 int main()
 {
-	bool useRobot = true;
+	bool useRobot = false;
 	
 	string caliberation_camera_file = "caliberation_camera.xml";
 	string Homo_cam2base_file = "Homo_cam2base.xml";
@@ -503,7 +503,11 @@ int main()
 			vector<Point> R;
 			cv::Point2f vertices[4];
 			colorMatRevise = processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices);
-			kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", 1);
+			kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", 0);
+
+			string name = "imgs/img" + std::to_string(cnt);
+			cv::imwrite(name + "_depth.png", depthMat);
+			cv::imwrite(name + "_depthcolorMat.png", colorMatRevise);
 			for (int i = 0; i < 4; i++)
 			{
 				R.push_back(Point(vertices[i].x, vertices[i].y));
