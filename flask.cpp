@@ -56,8 +56,9 @@ string send_mat(cv::Mat mat){
     return send_char_arr(memblock, size);
 }
 
-void getMask(cv::Mat& mat, vector<vector<cv::Point2d>> & points)
+void getMask(cv::Mat& mat, vector<cv::Mat> & masks)
 {
+    masks.clear();
 	string resp = send_mat(mat);
 	Document doc;
 	doc.Parse(resp.c_str());
@@ -67,6 +68,7 @@ void getMask(cv::Mat& mat, vector<vector<cv::Point2d>> & points)
 		cout << "get mask "<<success << endl;
 	}
 	//5.1 整型数组类型
+    vector<vector<cv::Point2d>> points;
 	int id, row, col;
     points.clear();
 	if(doc.HasMember("instances_id") && doc["instances_id"].IsArray()\
@@ -90,6 +92,15 @@ void getMask(cv::Mat& mat, vector<vector<cv::Point2d>> & points)
 			points[id].push_back(cv::Point2d(col, row));
 		}
 	}
+    for (int i = 0; i < points.size(); i++)
+	 {
+        masks.push_back(cv::Mat::zeros(mat.rows, mat.cols, CV_8UC1));
+        for (int j = 0; j < points[i].size(); j++)
+        {
+            
+            masks[i].at<UINT8>(points[i][j].y, points[i][j].x) = 255;
+        }
+    }
 	//cout << "issuccess: " << issuccess  << endl;
 	//GenericArray  arr = d["instances"].GetArray();
 }

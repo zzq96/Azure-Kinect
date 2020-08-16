@@ -404,7 +404,7 @@ void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
 int main()
 {
-	bool useRobot = false;
+	bool useRobot = true;
 	
 	string caliberation_camera_file = "caliberation_camera.xml";
 	string Homo_cam2base_file = "Homo_cam2base.xml";
@@ -498,16 +498,22 @@ int main()
 			vector<VertexType> highestPlanePoints_3D;
 			vector<Point> R;
 			cv::Point2f vertices[4];
-			vector<vector<cv::Point2d>> masks;
+			vector<cv::Mat> masks;
 			getMask(colorMatRevise,  masks);
 			cout << "有几个快递" << endl;
 			cout << masks.size() << endl;
 			string name = "imgs/img" + std::to_string(cnt);
-			colorMatRevise = processImg(colorMatRevise, depthMat, center, normal, angle, highestPlanePoints_3D, vertices);
+			double* x_axis, * y_axis, * z_axis;
+			colorMatRevise = processImg(colorMatRevise, depthMat, masks, center, x_axis, y_axis, z_axis, highestPlanePoints_3D, vertices);
 			kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
+			if (highestPlanePoints_3D.size() == 0)
+			{
+				Sleep(1000);
+				continue;
+			}
 
-			cv::imwrite(name + "_depth.png", depthMat);
-			cv::imwrite(name + "_depthcolor.png", colorMatRevise);
+			//cv::imwrite(name + "_depth.png", depthMat);
+			//cv::imwrite(name + "_depthcolor.png", colorMatRevise);
 			for (int i = 0; i < 4; i++)
 			{
 				R.push_back(Point(vertices[i].x, vertices[i].y));

@@ -6,7 +6,7 @@
 #include <string>
 #include <fstream>
 #include <Eigen/Eigen>
-#include "include/peac/AHCPlaneFitter.hpp"
+#include "AHCPlaneFitter.hpp"
 #include <unordered_map>
 
 using namespace std;
@@ -21,18 +21,6 @@ const float kInfVal = 1000000; // an infinite large value used in MRF optimizati
 
 // Camera intrinsic parameters.
 // All BundleFusion data uses the following parameters.
-//const double kFx = 583;
-//const double kFy = 583;
-//const double kCx = 320;
-//const double kCy = 240;
-//const int kDepthWidth = 640;
-//const int kDepthHeight = 480;
-//const double kFx = 600;
-//const double kFy = 600;
-//const double kCx = 640;
-//const double kCy = 365;
-//const int kDepthWidth = 1280;
-//const int kDepthHeight = 720;
 const double kFx = 505;
 const double kFy = 505;
 const double kCx = 334;
@@ -40,8 +28,14 @@ const double kCy = 334;
 const int kDepthWidth = 640;
 const int kDepthHeight = 576;
 
-cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, double*& center, 
-	double*& normal, float& minAreaRectAngle, vector<VertexType>& highestPlanePoints_3D, cv::Point2f * vertices);
+#if defined(__linux__) || defined(__APPLE__)
+#define _isnan(x) isnan(x)
+#endif
+
+cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, double*& center,
+	double*& x_axis, double*& y_axis, double*& z_axis, vector<VertexType>& highestPlanePoints, cv::Point2f* vertices);
+
+cv::RotatedRect getBoundingRect(cv::Mat src);
 
 struct ImagePointCloud
 {
@@ -82,12 +76,13 @@ public:
 	int plane_num_;
 
 	/* For MRF optimization */
+	cv::Mat opt_seg_img_;
 	cv::Mat opt_membership_img_; // optimized membership image (plane index each pixel belongs to)
 	vector<bool> pixel_boundary_flags_; // pixel is a plane boundary pixel or not
 	vector<int> pixel_grayval_;
 	vector<cv::Vec3b> plane_colors_;
-	vector<SumStats> sum_stats_; // parameters of sum of points from the same plane
-	vector<int> plane_pixel_nums_; // number of pixels each plane has
+	vector<SumStats> sum_stats_, opt_sum_stats_; // parameters of sum of points from the same plane
+	vector<int> plane_pixel_nums_, opt_plane_pixel_nums_; // number of pixels each plane has
 	unordered_map<int, int> pid_to_extractedpid; // plane index -> extracted plane index of plane_filter.extractedPlanes
 	unordered_map<int, int> extractedpid_to_pid; // extracted plane index -> plane index
 
@@ -97,17 +92,20 @@ public:
 
 	//bool readIntrinsicParameterFile(string filename);
 
-	bool readColorImage(cv::Mat src, cv::Rect roi);
+	bool readColorImage(cv::Mat src);
 
-	bool readDepthImage(cv::Mat src, cv::Rect roi);
+	bool readDepthImage(cv::Mat src, cv::Mat mask);
 
-	bool runPlaneDetection(cv::Point2f * vertices);
+	bool runPlaneDetection();
 
-	void writeOutputFiles(string output_folder, string frame_name);
+	void prepareForMRF();
 
-	void writePlaneDataFile(string filename);
+	void writeOutputFiles(string output_folder, string frame_name, bool run_mrf = false);
 
-	void writePlaneLabelFile(string filename);
+	void writePlaneDataFile(string filename, bool run_mrf = false);
+
+	void writePlaneLabelFile(string filename, bool run_mrf = false);
+
 
 private:
 	inline int RGB2Gray(int x, int y)
@@ -118,7 +116,7 @@ private:
 			0.5);
 	}
 
-	void computePlaneSumStats();
+	void computePlaneSumStats(bool run_mrf = false);
 
 };
 

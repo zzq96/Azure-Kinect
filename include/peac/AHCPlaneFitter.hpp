@@ -50,6 +50,7 @@
 namespace ahc {
 	using ahc::utils::Timer;
 	using ahc::utils::pseudocolor;
+
 	/**
 	 *  \brief An example of Image3D struct as an adaptor for any kind of point cloud to be used by our ahc::PlaneFitter
 	 *  
@@ -109,7 +110,7 @@ namespace ahc {
 		/************************************************************************/
 		//input
 		const Image3D *points;	//dim=<heightxwidthx3>, no ownership
-		int width, height;		//witdth=#cols, height=#rows (size of the input point cloud)
+		int width, height;		//width=#cols, height=#rows (size of the input point cloud)
 
 		int maxStep;			//max number of steps for merging clusters
 		int minSupport;			//min number of supporting point
@@ -124,10 +125,8 @@ namespace ahc {
 		ahc::shared_ptr<DisjointSet> ds;//with ownership, this disjoint set maintains membership of initial window/blocks during AHC merging
 		std::vector<PlaneSeg::shared_ptr> extractedPlanes;//a set of extracted planes
 		cv::Mat membershipImg;//segmentation map of the input pointcloud, membershipImg(i,j) records which plane (plid, i.e. plane id) this pixel/point (i,j) belongs to
-		std::vector<cv::RotatedRect> rects;
-		std::pair<int, double> lowestPlane;
-		std::pair<int, double> highestPlane;
-		std::vector<std::pair<int, int>> highestPlanePoints;
+		std::vector<std::pair<cv::Mat, cv::Mat>> rNt;
+		std::vector<cv::Mat> planes;
 
 		//intermediate
 		std::map<int,int> rid2plid;		//extractedPlanes[rid2plid[rootid]].rid==rootid, i.e. rid2plid[rid] gives the idx of a plane in extractedPlanes
@@ -152,12 +151,12 @@ namespace ahc {
 		/* Public Class Functions                                               */
 		/************************************************************************/
 		PlaneFitter() : points(0), width(0), height(0),
-			maxStep(100000), minSupport(2500),
+			maxStep(100000), minSupport(1000),
 			windowWidth(10), windowHeight(10),
 			doRefine(true), erodeType(ERODE_ALL_BORDER),
 			dirtyBlkMbship(true), drawCoarseBorder(false)
 		{
-			static const unsigned char default_colors[10][3] =
+			/*static const unsigned char default_colors[10][3] =
 			{
 				{255, 0, 0},
 				{255, 255, 0},
@@ -169,6 +168,19 @@ namespace ahc {
 				{10, 60, 60},
 				{255, 0, 128},
 				{60, 128, 128}
+			};*/
+			static const unsigned char default_colors[10][3] =
+			{				
+				{169, 200, 200},
+				{0, 208, 244},
+				{155, 175, 131},				
+				{148, 137, 69},
+				{8, 131, 229},
+				{124, 191, 160},
+				{123, 151, 138},
+				{154, 157, 252},
+				{173, 205, 249},
+				{140, 211, 222}
 			};
 			for(int i=0; i<10; ++i) {
 				colors.push_back(cv::Vec3b(default_colors[i]));
@@ -191,28 +203,6 @@ namespace ahc {
 			dirtyBlkMbship=true;
 		}
 
-		cv::RotatedRect getBoundingRect(cv::Mat src) {
-			//cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);
-			cv::Mat element = getStructuringElement(0,
-				cv::Size(5, 5),
-				cv::Point(-1, -1));
-			erode(src, src, element, cv::Point(-1, -1));
-			dilate(src, src, element, cv::Point(-1, -1));
-			threshold(src, src, 0, 255, cv::THRESH_BINARY);
-			std::vector<std::vector<cv::Point>> contours;
-			findContours(src, contours, cv::RETR_TREE, cv::CHAIN_APPROX_NONE, cv::Point());
-			int max = 0, index = 0;
-			for (int i = 0; i < contours.size(); ++i) {
-				if (contours[i].size() > max) {
-					max = contours[i].size();
-					index = i;
-				}
-			}
-			cv::RotatedRect minRect;
-			minRect = cv::minAreaRect(cv::Mat(contours[index]));
-			return minRect;
-		}
-
 		/**
 		 *  \brief run AHC plane fitting on one frame of point cloud pointsIn
 		 *  
@@ -228,7 +218,7 @@ namespace ahc {
 		double run(const Image3D* pointsIn,
 			std::vector<std::vector<int>>* pMembership=0,
 			cv::Mat* pSeg=0,
-			const std::vector<int> * const pIdxMap=0, bool verbose=false)
+			const std::vector<int> * const pIdxMap=0, bool verbose=true)
 		{
 			if(!pointsIn) return 0;
 #ifdef EVAL_SPEED
@@ -316,13 +306,6 @@ namespace ahc {
 			const std::vector<int> * const pIdxMap, //if pIdxMap!=0 pMembership->at(i).at(j)=pIdxMap(pixIdx)
 			cv::Mat* pSeg)
 		{
-			cv::Mat depth_Homo_cam2base	 =(cv::Mat_<double>(4,4)<<2.1717400918944269e-02, 9.9163976363198392e-01, 1.2719643737632352e-01,
-    2.9420400367679542e+02, 9.9974014635825281e-01,
-    -2.2422007434261534e-02, 4.1101511160483439e-03,
-    3.5015016682124605e+02, 6.9277887456734161e-03,
-	1.2707412311922936e-01, -9.9186903015296057e-01,
-	1.3214478208789160e+03, 0., 0., 0. ,1.);
-	std::cout<<depth_Homo_cam2base<<std::endl;
 			if(pMembership==0 && pSeg==0) return;
 			std::vector<bool> isValidExtractedPlane; //some planes might be eroded completely
 			this->findBlockMembership(isValidExtractedPlane);
@@ -346,7 +329,10 @@ namespace ahc {
 				if(isValidExtractedPlane[i])
 					minQ.push(oldExtractedPlanes[i]);
 			}
-			this->ahCluster(minQ, false);
+			this->ahCluster(minQ);
+			for (int i = 0; i < this->extractedPlanes.size(); ++i) {
+				this->extractedPlanes[i]->update();
+			}
 
 			//find plane idx maping from oldExtractedPlanes to final extractedPlanes
 			std::vector<int> plidmap(oldExtractedPlanes.size(),-1);
@@ -371,36 +357,6 @@ namespace ahc {
 			}
 			assert(nFinalPlanes==(int)this->extractedPlanes.size());
 
-			//find lowest & highest plane
-			lowestPlane.first = 0, highestPlane.first = 0;
-			lowestPlane.second = this->extractedPlanes[0]->center[2];
-			highestPlane.second = this->extractedPlanes[0]->center[2];
-			cv::Mat point3d;
-			for (int i = 1; i < (int)this->extractedPlanes.size(); ++i) {
-				point3d = (cv::Mat_<double>(4,1)<<this->extractedPlanes[i]->center[0],
-				this->extractedPlanes[i]->center[1],
-				this->extractedPlanes[i]->center[2],1);
-				point3d = -depth_Homo_cam2base * point3d;
-				std::cout<<"Height:"<< point3d.at<double>(2,0)<<std::endl;
-				if (point3d.at<double>(2, 0) > lowestPlane.second) {
-					lowestPlane.first = i;
-					lowestPlane.second = point3d.at<double>(2, 0);
-				}
-				if (point3d.at<double>(2, 0) < highestPlane.second) {
-					highestPlane.first = i;
-					highestPlane.second = point3d.at<double>(2, 0);
-				}
-				/*
-				if (this->extractedPlanes[i]->center[2] > lowestPlane.second) {
-					lowestPlane.first = i;
-					lowestPlane.second = this->extractedPlanes[i]->center[2];
-				}
-				if (this->extractedPlanes[i]->center[2] < highestPlane.second) {
-					highestPlane.first = i;
-					highestPlane.second = this->extractedPlanes[i]->center[2];
-				}*/
-			}
-
 			//scan membershipImg
 			if(nFinalPlanes>colors.size()) {
 				std::vector<cv::Vec3b> tmpColors=pseudocolor(nFinalPlanes-(int)colors.size());
@@ -414,48 +370,29 @@ namespace ahc {
 				}
 			}
 
-			cv::Mat* matPerPlane = new cv::Mat[(int)this->extractedPlanes.size()];
-			for (int i = 0; i < (int)this->extractedPlanes.size(); ++i) {
-				matPerPlane[i] = cv::Mat::zeros(this->height, this->width, CV_8UC1);				
+			for (int i = 0; i < this->extractedPlanes.size(); ++i) {
+				planes.push_back(cv::Mat::zeros(this->height, this->width, CV_8UC1));
 			}
 
 			static const cv::Vec3b blackColor(0,0,0);
-			static const cv::Vec3b whiteColor(255, 255, 255);
 			const int nPixels=this->width*this->height;
-			for(int i=0; i<this->height; ++i) {
-				for (int j = 0; j < this->width; ++j) {
-					int& plid = membershipImg.at<int>(i, j);					
-					if (plid >= 0 && plidmap[plid] >= 0) {	
-						if (plidmap[plid] == lowestPlane.first) continue; //newly added
-						if (plidmap[plid] == highestPlane.first) {
-							this->highestPlanePoints.push_back(std::pair<int, int>(i, j));
-						}
-						matPerPlane[plidmap[plid]].at<uchar>(i, j) = 255;
-						/*plid=plidmap[plid];
-						if(pSeg) pSeg->at<cv::Vec3b>(i, j)=this->colors[plid];
-						if(pMembership) pMembership->at(plid).push_back(
-							pIdxMap?pIdxMap->at(i):i);
-					} else {
-						if(pSeg) pSeg->at<cv::Vec3b>(i)=blackColor;*/
-					}
-				}
-				
-			}
-			for (int i = 0; i < (int)this->extractedPlanes.size(); ++i) {
-				if (i == lowestPlane.first) {
-					cv::RotatedRect table;
-					this->rects.push_back(table);
-				}
-				else {
-					this->rects.push_back(getBoundingRect(matPerPlane[i]));
+			for(int i=0; i<nPixels; ++i) {
+				int& plid=membershipImg.at<int>(i);
+				if(plid>=0 && plidmap[plid]>=0) {
+					plid=plidmap[plid];
+					planes[plid].at<uchar>(i) = 255;
+					/*if(pSeg) pSeg->at<cv::Vec3b>(i)=this->colors[plid];
+					if(pMembership) pMembership->at(plid).push_back(
+						pIdxMap?pIdxMap->at(i):i);
+				} else {
+					if(pSeg) pSeg->at<cv::Vec3b>(i)=blackColor;*/
 				}
 			}
-			std::cout << this->extractedPlanes.size() << std::endl;
-			
-			/*static const cv::Vec3b whiteColor(255,255,255);
+
+			static const cv::Vec3b whiteColor(255,255,255);
 			for(int k=0; pSeg && drawCoarseBorder && k<(int)border.size(); ++k) {
 				pSeg->at<cv::Vec3b>(border[k])=whiteColor;
-			}*/
+			}
 			//TODO: refine the plane equation as well after!!
 		}
 
@@ -523,7 +460,7 @@ namespace ahc {
 				for(int itr=0; itr<Nnbs; ++itr) {
 					const int cIdx=nbs[itr];
 					int& trail=membershipImg.at<int>(cIdx);
-					if(trail<=-6) continue; //visited from 4 neighbors already, skip
+					if (trail <= -6) continue;//visited from 4 neighbors already, skip
 					if(trail>=0 && trail==plid) continue; //if visited by the same plane, skip
 					const int cy=cIdx/this->width;
 					const int cx=cIdx-cy*this->width;
@@ -904,7 +841,7 @@ namespace ahc {
 						case PlaneSeg::TYPE_DEPTH_DISCONTINUE: //draw an 'x'
 							{
 								static const cv::Scalar red(255,0,0,1);
-								static const int len=4;
+								static const int len=3;
 								cv::line(dInit, cv::Point(cx-len, cy-len), cv::Point(cx+len,cy+len), red, 2);
 								cv::line(dInit, cv::Point(cx+len, cy-len), cv::Point(cx-len,cy+len), red, 2);
 								break;
@@ -987,10 +924,13 @@ namespace ahc {
 #ifdef DEBUG_INIT
 			static int cnt=0;
 			cv::namedWindow("debug initGraph");
-			cv::cvtColor(dInit,dInit,CV_RGB2BGR);
-			cv::imshow("debug initGraph", dInit);
+			cv::cvtColor(dInit,dInit,cv::COLOR_RGB2BGR);
+			//cv::imshow("debug initGraph", dInit);
+			cv::Rect roi = cv::Rect(240, 0, 260, 340);
+			dInit = dInit(roi);
 			std::stringstream ss;
-			ss<<saveDir<<"/output/db_init"<<std::setw(5)<<std::setfill('0')<<cnt++<<".png";
+			saveDir = "D:\\Desktop\\test2";
+			ss<<saveDir<<"\\output\\db_init"<<std::setw(5)<<std::setfill('0')<<cnt++<<".png";
 			cv::imwrite(ss.str(), dInit);
 #endif
 #ifdef DEBUG_CALC
@@ -1014,7 +954,8 @@ namespace ahc {
 #if !defined(DEBUG_INIT) && defined(DEBUG_CLUSTER)
 			dInit.create(this->height, this->width, CV_8UC3);
 #endif
-#ifdef DEBUG_CLUSTER
+#ifdef DEBUG_CLUSTER			
+			saveDir = "D:\\Desktop\\test2";
 			const int Nw = this->width/this->windowWidth;
 			int dSegCnt=0;
 			//dSeg.create(this->height, this->width, CV_8UC3);
@@ -1107,6 +1048,8 @@ namespace ahc {
 						cv::circle(dGraph, cv::Point(mx,my),2,blackColor,2);
 						cv::line(dGraph, cv::Point(cx,cy), cv::Point(mx,my), blackColor,2);
 						std::stringstream ss;
+						cv::Rect roi = cv::Rect(240, 0, 260, 340);
+						dGraph = dGraph(roi);
 						ss<<saveDir<<"/output/dGraph_"<<std::setw(5)<<std::setfill('0')<<++dSegCnt<<".png";
 						cv::imwrite(ss.str(), dGraph);
 						cv::imshow("debug Graph", dGraph);
@@ -1150,6 +1093,8 @@ namespace ahc {
 							cv::line(dGraph, cv::Point(ex-len,ey), cv::Point(ex+len,ey), blackColor, 2);
 							cv::line(dGraph, cv::Point(ex,ey-len), cv::Point(ex,ey+len), blackColor, 2);
 							std::stringstream ss;
+							cv::Rect roi = cv::Rect(240, 0, 260, 340);
+							dGraph = dGraph(roi);
 							ss<<saveDir<<"/output/dGraph_"<<std::setw(5)<<std::setfill('0')<<++dSegCnt<<".png";
 							cv::imwrite(ss.str(), dGraph);
 							cv::imshow("debug Graph", dGraph);
@@ -1171,6 +1116,8 @@ namespace ahc {
 						{
 							floodFillColor(p->rid, dGraph, cv::Vec3b(0,0,0));
 							std::stringstream ss;
+							cv::Rect roi = cv::Rect(240, 0, 260, 340);
+							dGraph = dGraph(roi);
 							ss<<saveDir<<"/output/dGraph_"<<std::setw(5)<<std::setfill('0')<<++dSegCnt<<".png";
 							cv::imwrite(ss.str(), dGraph);
 							cv::imshow("debug Graph", dGraph);

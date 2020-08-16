@@ -88,7 +88,7 @@
     <LibraryPath>D:\SoftWare\PCL\3rdParty\OpenNI2\Lib;D:\SoftWare\PCL\3rdParty\VTK\lib;D:\SoftWare\PCL\3rdParty\Qhull\lib;D:\SoftWare\PCL\3rdParty\FLANN\lib;D:\SoftWare\PCL\3rdParty\Boost\lib;D:\SoftWare\PCL\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\SoftWare\PCL\3rdParty\OpenNI2\Include;D:\SoftWare\PCL\include\pcl-1.9;D:\SoftWare\PCL\3rdParty\VTK\include\vtk-8.1;D:\SoftWare\PCL\3rdParty\QHull\include;D:\SoftWare\PCL\3rdParty\FLANN\include;D:\SoftWare\PCL\3rdParty\Eigen\eigen3;D:\SoftWare\PCL\3rdParty\Boost\include\boost-1_68;D:\Software\opencv\build\include;D:\Code\c++\Azure Kinect\curl\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\SoftWare\PCL\3rdParty\OpenNI2\Include;D:\SoftWare\PCL\include\pcl-1.9;D:\SoftWare\PCL\3rdParty\VTK\include\vtk-8.1;D:\SoftWare\PCL\3rdParty\QHull\include;D:\SoftWare\PCL\3rdParty\FLANN\include;D:\SoftWare\PCL\3rdParty\Eigen\eigen3;D:\SoftWare\PCL\3rdParty\Boost\include\boost-1_68;D:\Software\opencv\build\include;D:\Code\c++\Azure Kinect\curl\include;D:\Code\c++\Azure Kinect\include\peac;$(IncludePath)</IncludePath>
     <LibraryPath>D:\SoftWare\PCL\3rdParty\OpenNI2\Lib;D:\SoftWare\PCL\3rdParty\VTK\lib;D:\SoftWare\PCL\3rdParty\Qhull\lib;D:\SoftWare\PCL\3rdParty\FLANN\lib;D:\SoftWare\PCL\3rdParty\Boost\lib;D:\SoftWare\PCL\lib;D:\Software\opencv\build\x64\vc14\lib;D:\Code\c++\Azure Kinect\curl\build\lib\x64;$(LibraryPath)</LibraryPath>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>

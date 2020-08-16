@@ -123,7 +123,7 @@ struct PlaneSeg {
 		*  \param [out] curvature defined as in pcl
 		*/
 		inline void compute(double center[3], double normal[3],
-			double& mse, double& curvature) const
+			double& mse, double& curvature, double x_axis[3], double y_axis[3], double z_axis[3]) const
 		{
 			assert(N>=4);
 
@@ -146,11 +146,25 @@ struct PlaneSeg {
 				normal[0]=V[0][0];
 				normal[1]=V[1][0];
 				normal[2]=V[2][0];
+				z_axis[0] = V[0][0];
+				z_axis[1] = V[1][0];
+				z_axis[2] = V[2][0];
 			} else {
 				normal[0]=-V[0][0];
 				normal[1]=-V[1][0];
 				normal[2]=-V[2][0];
+				z_axis[0] = -V[0][0];
+				z_axis[1] = -V[1][0];
+				z_axis[2] = -V[2][0];
 			}
+			y_axis[0] = V[0][1];
+			y_axis[1] = V[1][1];
+			y_axis[2] = V[2][1];
+
+			x_axis[0] = V[0][2];
+			x_axis[1] = V[1][2];
+			x_axis[2] = V[2][2];
+
 			mse = sv[0]*sc;
 			curvature=sv[0]/(sv[0]+sv[1]+sv[2]);
 		}
@@ -163,6 +177,9 @@ struct PlaneSeg {
 	int N;						//#member points, same as stats.N
 	double curvature;
 	bool nouse;					//this PlaneSeg will be marked as nouse after merged with others to produce a new PlaneSeg node in the graph
+	double x_axis[3];
+	double y_axis[3];
+	double z_axis[3];
 
 #ifdef DEBUG_INIT
 	enum Type {
@@ -189,7 +206,7 @@ struct PlaneSeg {
 	NbSet nbs;			//neighbors, i.e. adjacency list for a graph structure
 
 	inline void update() {
-		this->stats.compute(this->center, this->normal, this->mse, this->curvature);
+		this->stats.compute(this->center, this->normal, this->mse, this->curvature, this->x_axis, this->y_axis, this->z_axis);
 	}
 
 	/**
@@ -198,7 +215,7 @@ struct PlaneSeg {
 	*  \param [in] points organized point cloud adapter, see NullImage3D
 	*  \param [in] root_block_id initial window/block's id
 	*  \param [in] seed_row row index of the upper left pixel of the initial window/block
-	*  \param [in] seed_col row index of the upper left pixel of the initial window/block
+	*  \param [in] seed_col col index of the upper left pixel of the initial window/block
 	*  \param [in] imgWidth width of the organized point cloud
 	*  \param [in] imgHeight height of the organized point cloud
 	*  \param [in] winWidth width of the initial window/block
@@ -267,7 +284,7 @@ struct PlaneSeg {
 		if(this->N<4) {
 			this->mse=this->curvature=std::numeric_limits<double>::quiet_NaN();
 		} else {
-			this->stats.compute(this->center, this->normal, this->mse, this->curvature);
+			this->stats.compute(this->center, this->normal, this->mse, this->curvature, this->x_axis, this->y_axis, this->z_axis);
 #ifdef DEBUG_CALC
 			this->mseseq.push_back(cv::Vec2d(this->N,this->mse));
 #endif
@@ -278,7 +295,7 @@ struct PlaneSeg {
 		const uchar clx=uchar((this->normal[0]+1.0)*0.5*255.0);
 		const uchar cly=uchar((this->normal[1]+1.0)*0.5*255.0);
 		const uchar clz=uchar((this->normal[2]+1.0)*0.5*255.0);
-		this->normalClr=cv::Vec3b(clx,cly,clz);
+		this->normalClr=cv::Vec3b(clz,cly,clx);
 		this->clr=cv::Vec3b(rand()%255,rand()%255,rand()%255);
 #endif
 		//std::cout<<this->curvature<<std::endl;
@@ -303,7 +320,7 @@ struct PlaneSeg {
 		//in mergeNbsFrom(pa,pb) function, since
 		//this object might not be accepted into the graph structure
 
-		this->stats.compute(this->center, this->normal, this->mse, this->curvature);
+		this->stats.compute(this->center, this->normal, this->mse, this->curvature, this->x_axis, this->y_axis, this->z_axis);
 
 #if defined(DEBUG_CLUSTER)
 		const uchar clx=uchar((this->normal[0]+1.0)*0.5*255.0);
