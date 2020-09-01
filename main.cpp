@@ -16,7 +16,6 @@
 #include "plane_detection.h"
 #include<ctime>
 #include <fstream>
-#include"Function_SHUJING.h"
 #include"SocketRobot.h"
 #include "flask.h"
 
@@ -26,14 +25,12 @@ cv::Mat depthMatOld,colorMatOld, depthcolorMatOld, irMatOld, ircolorMatOld;
 cv::Mat Depth2ColorRotation, Depth2ColorTranslation;
 //深度值经过外参校正后的深度图像
 cv::Mat depthMatRevise;
-Object ObjectRes[10];
 cv::Mat depthCameraMatrix, depthDistCoeffs;
 cv::Mat colorCameraMatrix, colorDistCoeffs;
 cv::Mat color_R_base2cam, color_t_base2cam;
 cv::Mat depth_R_base2cam, depth_t_base2cam;
 cv::Mat color_R_cam2base, color_t_cam2base;
 cv::Mat depth_R_cam2base, depth_t_cam2base;
-bool shang = TRUE;
 // Checks if a matrix is a valid rotation matrix.
 bool isRotationMatrix(cv::Mat &R)
 {
@@ -42,7 +39,6 @@ bool isRotationMatrix(cv::Mat &R)
     cv::Mat shouldBeIdentity = Rt * R;
     cv::Mat I = cv::Mat::eye(3,3, shouldBeIdentity.type());
     return  norm(I, shouldBeIdentity) < 1e-6;
-     
 }
  
 // Calculates rotation matrix to euler angles
@@ -68,6 +64,7 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat &R)
     }
     return cv::Vec3f(z, y, x) / CV_PI * 180;   
 }
+//计算点(row,col）的深度，为了降低噪声影响，以周围2*size大小的正方形区域为采样点。
 double getDepthValue(cv::Mat depthMat,int row, int col, int size)
 {
 	int rows = depthMat.rows, cols = depthMat.cols;
@@ -85,6 +82,7 @@ double getDepthValue(cv::Mat depthMat,int row, int col, int size)
 	assert(cnt);
 	return sum / cnt;
 }
+//计算点point2D的深度，为了降低噪声影响，以周围2*size大小的正方形区域为采样点。
 UINT16 getDepth(cv::Mat point2D)
 {
 	int x = (int)point2D.at<float>(0, 0);
@@ -105,59 +103,7 @@ float getDistance(cv::Point3f a, cv::Point3f b)
 	float  d = sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); 
 	return d;
 }
-bool compare(Object a, Object b)
-{
-	float ay = (a.R[0].y + a.R[1].y + a.R[2].y + a.R[3].y)/4;
-	float by = (b.R[0].y + b.R[1].y + b.R[2].y + b.R[3].y)/4;
-	if (shang == TRUE)
-	{
-		//float ay = -1000000, by = -100000;
-		//ay = min(a.R[0].y, min(a.R[1].y, min(a.R[2].y, a.R[3].y)));
-		//by = min(b.R[0].y, min(b.R[1].y, min(b.R[2].y, b.R[3].y)));
-
-		if (ay > 400)
-			return FALSE;
-		if (by > 400)
-			return TRUE;
-		return ay < by;
-	}
-	else
-	{
-		float ax = -1000000, bx = -100000;
-		ax = max(a.R[0].x, max(a.R[1].x, max(a.R[2].x, a.R[3].x)));
-		bx = max(b.R[0].x, max(b.R[1].x, max(b.R[2].x, b.R[3].x)));
-
-		if (ay < 400)
-			return FALSE;
-		if (by < 400)
-			return TRUE;
-		return ax < bx;
-	}
-}
-//TODO:没测试过
-//以高度从上到下排序
-bool compareByHeight(Object a, Object b)
-{
-	float ay = (a.R[0].y + a.R[1].y + a.R[2].y + a.R[3].y)/4;
-	float ax = (a.R[0].x + a.R[1].x + a.R[2].x + a.R[3].x)/4;
-	float by = (b.R[0].y + b.R[1].y + b.R[2].y + b.R[3].y)/4;
-	float bx = (b.R[0].x + b.R[1].x + b.R[2].x + b.R[3].x)/4;
-	cv::Mat aM =(cv::Mat_<float>(3, 1)<<ax, ay, 1);
-	cv::Mat bM =(cv::Mat_<float>(3, 1)<<bx, by, 1);
-
-	UINT16 aDepth = getDepth(aM);
-	UINT16 bDepth = getDepth(bM);
-	//根据外参计算到机械臂坐标系
-	cv::Mat a3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * aDepth * aM - depth_t_base2cam);
-	cv::Mat b3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * bDepth * bM - depth_t_base2cam);
-	return a3D.at<float>(2, 0) > b3D.at<float>(2, 0);
-}
-bool compareByArea(Object a, Object b)
-{
-	float aArea = abs((a.R[0] - a.R[1]) ^ (a.R[1] - a.R[2]));
-	float bArea = abs((b.R[0] - b.R[1]) ^ (b.R[1] - b.R[2]));
-	return aArea > bArea;
-}
+//单应矩阵转化为旋转矩阵和平移向量
 void HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 {
 	//Mat R_HomoMtr = HomoMtr(Rect(0, 0, 3, 3)); //注意Rect取值
@@ -173,6 +119,7 @@ void HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 
 }
 
+//旋转矩阵和平移向量转化为单应矩阵
 cv::Mat RT2HomogeneousMatrix(const cv::Mat& R,const cv::Mat& T)
 {
 	cv::Mat HomoMtr;
@@ -189,7 +136,7 @@ cv::Mat RT2HomogeneousMatrix(const cv::Mat& R,const cv::Mat& T)
 	cv::hconcat(R1, T1, HomoMtr);		//矩阵拼接
 	return HomoMtr;
 }
-//计算周围5个点的平均值
+//传入像素坐标系的点，返回机械臂坐标系下的坐标
 void calPoint3D(cv::Mat point2D, cv::Point3f & real, UINT16 Zc)
 {
 	assert(Zc != 0);
@@ -198,16 +145,16 @@ void calPoint3D(cv::Mat point2D, cv::Point3f & real, UINT16 Zc)
 	real.y = point3D.at<float>(1, 0);
 	real.z = point3D.at<float>(2, 0);
 }
-
-cv::Mat calRotationMatrix(const vector<Point> &R, float scale)
+//根据外接矩形计算快递的旋转矩阵
+cv::Mat calRotationMatrix(cv::Point2f *R, float scale)
 {
 	cv::Mat a = (cv::Mat_<float>(3, 1) << R[0].x, R[0].y, 1);
 	cv::Mat b = (cv::Mat_<float>(3, 1) << R[1].x, R[1].y, 1);
 	cv::Mat c = (cv::Mat_<float>(3, 1) << R[2].x, R[2].y, 1);
 	cv::Mat d = (cv::Mat_<float>(3, 1) << R[3].x, R[3].y, 1);
-	cout << "abcd" << a << b << c << d << endl;
+	//cout << "abcd" << a << b << c << d << endl;
 	cv::Mat center = (a + b + c + d) / 4;
-	cout << "center" << center << endl;
+	//cout << "center" << center << endl;
 
 	cv::Mat aa = center + (a - center)  * scale;
 	cv::Mat bb = center + (b - center)  * scale;
@@ -292,16 +239,18 @@ cv::Mat calRotationMatrix(const vector<Point> &R, float scale)
 
 	return new_rotation;
 }
+//根据
 /*不考虑z轴*/
-float calAngle(const vector<Point>& R, int h, int w, UINT16 depth)
+float calAngle(cv::Point2f *R, int h, int w, UINT16 depth)
 {
+	int size = 4;
 	cv::Mat point2D(3, 1, CV_32F, cv::Scalar(0));
 	point2D.at<float>(2, 0) = 1;
 	cv::Mat point3D(3, 1, CV_32F, cv::Scalar(0));
 	cv::Point3f a, b, c;//长方形三个顶点的真实坐标
 	/*如果某一个点超出边界，则顺移点。毛想想应该最多只有一个点超出边界*/
 	int k;
-	for (int i = 0; i < R.size(); i++)
+	for (int i = 0; i < size; i++)
 	{
 		k = i;
 		if (R[k].x < 0 || R[k].x >= w || R[k].y < 0 || R[k].y >= h)
@@ -310,14 +259,14 @@ float calAngle(const vector<Point>& R, int h, int w, UINT16 depth)
 		point2D.at<float>(1, 0) = R[k].y;
 		calPoint3D(point2D, a, depth);
 
-		k = (i + 1) % R.size();
+		k = (i + 1) % size;
 		if (R[k].x < 0 || R[k].x >= w || R[k].y < 0 || R[k].y >= h)
 			continue;
 		point2D.at<float>(0, 0) = R[k].x;
 		point2D.at<float>(1, 0) = R[k].y;
 		calPoint3D(point2D, b, depth);
 
-		k = (i + 2) % R.size();
+		k = (i + 2) % size;
 		if (R[k].x < 0 || R[k].x >= w || R[k].y < 0 || R[k].y >= h)
 			continue;
 		point2D.at<float>(0, 0) = R[k].x;
@@ -326,8 +275,8 @@ float calAngle(const vector<Point>& R, int h, int w, UINT16 depth)
 		break;
 	}
 	float angle;
-	cout << "边长1" << getDistance(a, b) << ":边长2" << getDistance(b, c) << endl;
-	cout << endl;
+	//cout << "边长1" << getDistance(a, b) << ":边长2" << getDistance(b, c) << endl;
+	//cout << endl;
 	if(getDistance(a, b) > getDistance(b, c))
 	{
 		if (abs(a.x - b.x) < 30)
@@ -352,8 +301,8 @@ float calAngle(const vector<Point>& R, int h, int w, UINT16 depth)
 			angle = (tanh(k) / PI * 180);
 		}
 	}
-	cout << "oldangle" << endl;
-	cout << angle << endl;
+	//cout << "oldangle" << endl;
+	//cout << angle << endl;
 	if (angle > 90)
 		angle -= 180;
 	if (angle < -90)
@@ -361,46 +310,6 @@ float calAngle(const vector<Point>& R, int h, int w, UINT16 depth)
 	return angle;
 }
 
-//TODO:删除那些重合的物体
-void DeleteBadObejct(Object *ObjectRes, int &iObj_num) 
-{
-	//按面积从大到小排序
-	sort(ObjectRes, ObjectRes + iObj_num, compareByArea);
-	for (int i = 0; i < iObj_num; i++)
-	{
-		for (int j = i + 1; j < iObj_num; j++)
-		{
-			//找到j的中心点
-			float y = (ObjectRes[j].R[0].y + ObjectRes[j].R[1].y + ObjectRes[j].R[2].y + ObjectRes[j].R[3].y)/4;
-			float x = (ObjectRes[j].R[0].x + ObjectRes[j].R[1].x + ObjectRes[j].R[2].x + ObjectRes[j].R[3].x)/4;
-
-			vector<cv::Point> contours(4);
-			contours[0].x = ObjectRes[i].R[0].x;
-			contours[0].y = ObjectRes[i].R[0].y;
-			contours[1].x = ObjectRes[i].R[1].x;
-			contours[1].y = ObjectRes[i].R[1].y;
-			contours[2].x = ObjectRes[i].R[2].x;
-			contours[2].y = ObjectRes[i].R[2].y;
-			contours[3].x = ObjectRes[i].R[3].x;
-			contours[3].y = ObjectRes[i].R[3].y;
-
-			float isIn = cv::pointPolygonTest(contours, cv::Point2f(x, y), true);
-
-			//
-			if (isIn > 0)
-			{
-				for (int k = j; k < iObj_num - 1; k++)
-					swap(ObjectRes[k], ObjectRes[k+1]);
-				iObj_num--;
-				cout << "删除一个物体，xy为：" << x << " " << y << endl;
-			}
-		}
-	}
-}
-//把中心点涂黑，方便找到桌面上的（0,0）点
-void DrawCenterPoints(cv::Mat& colorMat);
-//测试GetXYZAtCameraView函数
-void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
 int main()
 {
@@ -496,10 +405,9 @@ int main()
 			float angle;
 
 			vector<VertexType> highestPlanePoints_3D;
-			vector<Point> R;
 			cv::Point2f vertices[4];
 			vector<cv::Mat> masks;
-			getMask(colorMatRevise,  masks);
+			getMasks(colorMatRevise,  masks);
 			cout << "有几个快递" << endl;
 			cout << masks.size() << endl;
 			string name = "imgs/img" + std::to_string(cnt);
@@ -512,12 +420,6 @@ int main()
 				continue;
 			}
 
-			//cv::imwrite(name + "_depth.png", depthMat);
-			//cv::imwrite(name + "_depthcolor.png", colorMatRevise);
-			for (int i = 0; i < 4; i++)
-			{
-				R.push_back(Point(vertices[i].x, vertices[i].y));
-			}
 
 			//cv::Mat Points_3D = cv::Mat_<float>(highestPlanePoints_3D.size(), 3);
 			//for (int i = 0; i < highestPlanePoints_3D.size(); i++)
@@ -587,8 +489,8 @@ int main()
 				float x=0, y=0;
 				for (int j = 0; j < 4; j++)
 				{
-					x += R[j].x;
-					y += R[j].y;
+					x += vertices[j].x;
+					y += vertices[j].y;
 				}
 				x /= 4, y /= 4;
 				/*齐次坐标*/
@@ -598,9 +500,9 @@ int main()
 				/*平均周围深度，减少误差*/
 				
 				double Zc = getDepthValue(depthMat, y, x, 6); 
-				angle = calAngle(R, depthMat.rows, depthMat.cols, Zc);
+				angle = calAngle(vertices, depthMat.rows, depthMat.cols, Zc);
 				//平面法向量
-				cv::Mat rotationMatrix = calRotationMatrix(R, 0.6);
+				cv::Mat rotationMatrix = calRotationMatrix(vertices, 0.6);
 				cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(rotationMatrix);
 				cout << "物体的旋转矩阵为" << endl;
 				cout << rotationMatrix << endl;
@@ -621,10 +523,11 @@ int main()
 				coords[4] = eulerAngles[1];
 				coords[5] = eulerAngles[2];
 				coords[6] = 698 + 50;
+				//放成一排
 				//coords[7] = 342 - 750 + cnt * 220;
+				//放到固定位置
 				coords[7] = 0;
 				cnt++;
-			
 				if(coords[2] > 160)
 					coords[8] = 160 - 50;
 				else
@@ -635,60 +538,6 @@ int main()
 
 				if(useRobot)
 					sr->moveRobot(coords);
-
 	}
 return 0;
 }
-void TestGetXYZAtCameraView()
-{	
-	for (int i = 1; i <= 6; i++)
-	{
-		std::string name = "imgs/img" + to_string(i);
-		cout << name << endl;
-		cv::Mat img_depth = cv::imread(name+"_depth.png",cv::IMREAD_ANYDEPTH);
-		cv::Mat img_color = cv::imread(name+"_color.png");
-		cv::Mat img_depthcolor = cv::imread(name+"_depthcolor.png");
-		int iDistance = 1380;
-
-		//测试GetXYZAtCameraView函数
-		//cv::Point2i point2D(360, 640);
-		for(int x = 0; x<720;x++)
-			for (int y = 0; y < 1280; y++)
-			{
-				cv::Point2i point2D(x, y);
-				cv::Point3f point3D;
-				//kinect.GetXYZAtCameraView(point2D, img_depth.at<UINT16>(point2D.x, point2D.y), point3D);
-				kinect.GetXYZAtCameraView(point2D, 1000, point3D);
-				if (abs(point3D.x) < 5 && abs(point3D.y) < 5)
-				{
-					cout << x << " " << y << endl;
-					cout << "x:" << point3D.x << " " << "y:" << point3D.y << " " << "z:" << point3D.z << endl;
-				}
-			}
-		
-		int iObj_num = ObjectLocation(depthCameraMatrix, (UINT16*)img_depth.data, iDistance, img_depth.cols, img_depth.rows,10, 710, ObjectRes);
-		cout << "iObj_num:"<<iObj_num << endl;
-		for (int i = 0; i < iObj_num; i++)
-		{
-			Draw_Polygon(img_depthcolor.data, img_depthcolor.cols, img_depthcolor.rows, 4, ObjectRes[i].R, 0, 0, 255);
-		}
-		kinect.ShowOpenCVImage(img_depthcolor, "depthcolor", 0);
-	}
-}
-void DrawCenterPoints(cv::Mat& colorMat)
-{
-	colorMat.at<cv::Vec4b>(288, 320)[0] = 0;
-	colorMat.at<cv::Vec4b>(288, 320)[1] = 0;
-	colorMat.at<cv::Vec4b>(288, 320)[2] = 0;
-	colorMat.at<cv::Vec4b>(288, 321)[0] = 0;
-	colorMat.at<cv::Vec4b>(288, 321)[1] = 0;
-	colorMat.at<cv::Vec4b>(288, 321)[2] = 0;
-	colorMat.at<cv::Vec4b>(288, 319)[0] = 0;
-	colorMat.at<cv::Vec4b>(288, 319)[1] = 0;
-	colorMat.at<cv::Vec4b>(288, 319)[2] = 0;
-	colorMat.at<cv::Vec4b>(289, 320)[3]= 0;
-	colorMat.at<cv::Vec4b>(289, 320)[0] = 0;
-	colorMat.at<cv::Vec4b>(289, 320)[1] = 0;
-	colorMat.at<cv::Vec4b>(289, 320)[2] = 0;
-}
-

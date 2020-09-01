@@ -56,7 +56,7 @@ string send_mat(cv::Mat mat){
     return send_char_arr(memblock, size);
 }
 
-void getMask(cv::Mat& mat, vector<cv::Mat> & masks)
+void getMasks(cv::Mat& mat, vector<cv::Mat> & masks)
 {
     masks.clear();
 	string resp = send_mat(mat);

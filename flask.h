@@ -24,4 +24,4 @@
 using namespace std;
 using namespace rapidjson;
 
-void getMask(cv::Mat& mat, vector<cv::Mat> & masks);
+void getMasks(cv::Mat& mat, vector<cv::Mat> & masks);
