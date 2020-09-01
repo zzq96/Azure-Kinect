@@ -5,13 +5,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <k4a/k4a.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pcl/ModelCoefficients.h>
-#include <pcl/filters/project_inliers.h>
-#include <pcl/visualization/cloud_viewer.h>
-#include<pcl/filters/passthrough.h>
-#include <pcl/common/common.h>
 #include "k4a_grabber.h"
 #include "plane_detection.h"
 #include<ctime>
@@ -20,14 +13,14 @@
 #include "flask.h"
 
 
+string caliberation_camera_file = "caliberation_camera.xml";
+string Homo_cam2base_file = "Homo_cam2base.xml";
+k4a::KinectAPI kinect(caliberation_camera_file, true);
 //原始的深度图，深度图的伪彩色图，红外线图，红外线伪彩色图
 cv::Mat depthMat, colorMat, depthcolorMat, irMat, ircolorMat;
 cv::Mat depthMatOld, colorMatOld, depthcolorMatOld, irMatOld, ircolorMatOld;
-cv::Mat Depth2ColorRotation, Depth2ColorTranslation;
 //深度值经过外参校正后的深度图像
 cv::Mat depthMatRevise;
-cv::Mat depthCameraMatrix, depthDistCoeffs;
-cv::Mat colorCameraMatrix, colorDistCoeffs;
 cv::Mat color_R_base2cam, color_t_base2cam;
 cv::Mat depth_R_base2cam, depth_t_base2cam;
 cv::Mat color_R_cam2base, color_t_cam2base;
@@ -143,7 +136,7 @@ cv::Mat RT2HomogeneousMatrix(const cv::Mat& R, const cv::Mat& T)
 void calPoint3D(cv::Mat point2D, cv::Point3f& real, UINT16 Zc)
 {
 	assert(Zc != 0);
-	cv::Mat point3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
+	cv::Mat point3D = depth_R_base2cam.t() * (kinect.depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
 	real.x = point3D.at<double>(0, 0);
 	real.y = point3D.at<double>(1, 0);
 	real.z = point3D.at<double>(2, 0);
@@ -313,29 +306,9 @@ double calAngle(cv::Point2f* R, int h, int w, UINT16 depth)
 	return angle;
 }
 
-k4a::KinectAPI kinect;
 int main()
 {
 	bool useRobot = false;
-
-	string caliberation_camera_file = "caliberation_camera.xml";
-	string Homo_cam2base_file = "Homo_cam2base.xml";
-	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
-	//读取深度图的内参矩阵
-	fs["depth_cameraMatrix"] >> depthCameraMatrix;
-	cout << depthCameraMatrix.type() << endl;
-	depthCameraMatrix.convertTo(depthCameraMatrix, CV_64F);
-	cout << depthCameraMatrix.type() << endl;
-	fs["depth_distCoeffs"] >> depthDistCoeffs;
-	cout << "depthCameraMatrix" << depthCameraMatrix << endl;
-	cout << "depthdisCoeffs" << depthDistCoeffs << endl;
-	//读取color图的内参矩阵
-	fs["color_cameraMatrix"] >> colorCameraMatrix;
-	cout << colorCameraMatrix.type() << endl;
-	fs["color_distCoeffs"] >> colorDistCoeffs;
-	cout << "colorCameraMatrix" << colorCameraMatrix << endl;
-	cout << "colordisCoeffs" << colorDistCoeffs << endl;
-	fs.release();
 
 	cv::FileStorage fs2(Homo_cam2base_file, cv::FileStorage::READ); //读取相机与基座的转化关系XML文件  
 	cv::Mat color_Homo_cam2base, depth_Homo_cam2base;
@@ -354,9 +327,7 @@ int main()
 	if (useRobot)
 		sr = new SocketRobot();
 
-	kinect.GetRotationAndTranslationFromDepth2Color(Depth2ColorRotation, Depth2ColorTranslation);
 
-	cv::Mat Homo_depth2color = RT2HomogeneousMatrix(Depth2ColorRotation, Depth2ColorTranslation);
 
 
 	cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
@@ -370,34 +341,18 @@ int main()
 
 		kinect.GetOpenCVImage(colorMatOld, depthMatOld, depthcolorMatOld, irMat, FALSE);
 		///*根据内参和畸变系数校正图像*/
-		undistort(depthMatOld, depthMat, depthCameraMatrix, depthDistCoeffs);
-		undistort(depthcolorMatOld, depthcolorMat, depthCameraMatrix, depthDistCoeffs);
-		undistort(colorMatOld, colorMat, colorCameraMatrix, colorDistCoeffs);
+		kinect.undistort(depthMatOld, depthMat, "depth");
+		kinect.undistort(depthcolorMatOld, depthcolorMat, "depth");
+		kinect.undistort(colorMatOld, colorMat, "color");
 		//kinect.ShowOpenCVImage(colorMat, "color");
 		//kinect.ShowOpenCVImage(colorMatOld, "color");
 		//kinect.ShowOpenCVImage(depthcolorMat, "depthcolor");
 		//kinect.ShowOpenCVImage(depthcolorMatOld, "depthcolor");
-		//将depth转化为color视角
+
+		//将color图转化到深度图视角
 		cv::Mat colorMatRevise(depthMat.rows, depthMat.cols, CV_8UC4, cv::Scalar(0));
+		kinect.ConvertColor2Depth(colorMat, depthMat, colorMatRevise);
 
-		for (int i = 0; i < depthMat.rows; i++)
-			for (int j = 0; j < depthMat.cols; j++)
-				if (depthMat.at<UINT16>(i, j) != 0)
-				{
-					point2D.at<double>(0, 0) = j;
-					point2D.at<double>(1, 0) = i;
-					//从depth的图像坐标系转化为depth相机坐标系
-					point3D = depthCameraMatrix.inv() * point2D * depthMat.at<UINT16>(i, j);
-
-					point3D = Depth2ColorRotation * point3D + Depth2ColorTranslation;
-					//cout << j << " " << i << " " << depthMat.at<UINT16>(i, j) << endl;
-					point2D = colorCameraMatrix * point3D / point3D.at<double>(2, 0);
-					int new_i = point2D.at<double>(0, 1), new_j = point2D.at<double>(0, 0);
-					if (new_i >= 0 && new_j >= 0 && new_i < colorMat.rows && new_j < colorMat.cols)
-					{
-						colorMatRevise.at<UINT32>(i, j) = colorMat.at<UINT32>(new_i, new_j);
-					}
-				}
 
 		double* center;
 		double* normal;
@@ -440,7 +395,7 @@ int main()
 		cout << rotationMatrix << endl;
 
 
-		cv::Mat point3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
+		cv::Mat point3D = depth_R_base2cam.t() * (kinect.depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
 
 		cout << "坐标:" << endl;
 		cout << point3D << endl;

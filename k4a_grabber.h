@@ -20,8 +20,11 @@ struct Pixel {
 using DepthPixel = uint16_t;
 class KinectAPI {
 public:
+	cv::Mat depthCameraMatrix, depthDistCoeffs;
+	cv::Mat colorCameraMatrix, colorDistCoeffs;
+	cv::Mat Depth2ColorRotation, Depth2ColorTranslation;
 	//初始化函数
-	KinectAPI();
+	KinectAPI(const std::string &caliberation_camera_file, bool verbose);
     k4a_device_configuration_t config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
 	//get images in opencv Mat format
 	//colorMat is a color image in 8UC4 format belonging to RGBA
@@ -31,7 +34,8 @@ public:
 	void GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation, cv::Mat& Depth2ColorTranslation);
 	void ShowOpenCVImage(cv::Mat Img, std::string name, int waitkey);
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
-
+	void undistort(cv::Mat& ImgOld, cv::Mat& Img, const std::string& type);
+	void ConvertColor2Depth(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& colorMatRevise);
 	//得到Mat格式的相机内参
 	//cameraType是"depth"or"color"
 	//discoeffs:k1, k2, p1, p2, k3

@@ -4,43 +4,99 @@
 #include "k4a_grabber.h"
 using namespace std;
 
-k4a::KinectAPI::KinectAPI()
+k4a::KinectAPI::KinectAPI(const std::string &caliberation_camera_file, bool verbose)
 {
-    device_count = k4a_device_get_installed_count();
+	device_count = k4a_device_get_installed_count();
 	if (device_count == 0)
 		throw "No k4a devices attached!\n";
 	else printf("Found %d connected devices\n", device_count);
 
-    if (K4A_FAILED(k4a_device_open(K4A_DEVICE_DEFAULT, &device)))
+	if (K4A_FAILED(k4a_device_open(K4A_DEVICE_DEFAULT, &device)))
 		throw "Failed to open k4a device!\n";
 
-    // Configure a stream of 4096x3072 BRGA color data at 15 frames per second
-    config.camera_fps       = K4A_FRAMES_PER_SECOND_15;//设定每一秒帧数
-    config.color_format     = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-    config.color_resolution = K4A_COLOR_RESOLUTION_720P;
+	// Configure a stream of 4096x3072 BRGA color data at 15 frames per second
+	config.camera_fps = K4A_FRAMES_PER_SECOND_15;//设定每一秒帧数
+	config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
+	config.color_resolution = K4A_COLOR_RESOLUTION_720P;
 	config.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
 	//config.depth_mode = K4A_DEPTH_MODE_WFOV_UNBINNED;
 	config.synchronized_images_only = true;
 
-    // Start the camera with the given configuration
-    if (K4A_FAILED(k4a_device_start_cameras(device, &config)))
-    {
-        k4a_device_close(device);
+	// Start the camera with the given configuration
+	if (K4A_FAILED(k4a_device_start_cameras(device, &config)))
+	{
+		k4a_device_close(device);
 		throw "Failed to start cameras!\n";
-    }
+	}
 	if (K4A_RESULT_SUCCEEDED !=
 		k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration))
 	{
 		throw ("Failed to get calibration\n");
 	}
+
+	if (caliberation_camera_file.size() == 0)
+		throw "caliberation camera file path is none";
+	else
+	{
+		cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
+		//读取深度图的内参矩阵
+		fs["depth_cameraMatrix"] >> depthCameraMatrix;
+		depthCameraMatrix.convertTo(depthCameraMatrix, CV_64F);
+		fs["depth_distCoeffs"] >> depthDistCoeffs;
+		//读取color图的内参矩阵
+		fs["color_cameraMatrix"] >> colorCameraMatrix;
+		fs["color_distCoeffs"] >> colorDistCoeffs;
+		if (verbose)
+		{
+			cout << "depthCameraMatrix" << depthCameraMatrix << endl;
+			cout << "depthdisCoeffs" << depthDistCoeffs << endl;
+			cout << "colorCameraMatrix" << colorCameraMatrix << endl;
+			cout << "colordisCoeffs" << colorDistCoeffs << endl;
+		}
+		fs.release();
+	}
+	GetRotationAndTranslationFromDepth2Color(Depth2ColorRotation, Depth2ColorTranslation);
 }
 
+void k4a::KinectAPI::undistort(cv::Mat& ImgOld, cv::Mat& Img, const string& type)
+{
+	if (type == "depth")
+		cv::undistort(ImgOld, Img, depthCameraMatrix, depthDistCoeffs);
+	else
+		cv::undistort(ImgOld, Img, colorCameraMatrix, colorDistCoeffs);
+}
+
+void k4a::KinectAPI::ConvertColor2Depth(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& colorMatRevise)
+{
+	cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
+	point2D.at<double>(2, 0) = 1;
+	cv::Mat point3D;
+	for (int i = 0; i < depthMat.rows; i++)
+		for (int j = 0; j < depthMat.cols; j++)
+			if (depthMat.at<UINT16>(i, j) != 0)
+			{
+				point2D.at<double>(0, 0) = j;
+				point2D.at<double>(1, 0) = i;
+				//从depth的图像坐标系转化为depth相机坐标系
+				point3D = depthCameraMatrix.inv() * point2D * depthMat.at<UINT16>(i, j);
+
+				point3D = Depth2ColorRotation * point3D + Depth2ColorTranslation;
+				//cout << j << " " << i << " " << depthMat.at<UINT16>(i, j) << endl;
+				point2D = colorCameraMatrix * point3D / point3D.at<double>(2, 0);
+				int new_i = point2D.at<double>(0, 1), new_j = point2D.at<double>(0, 0);
+				if (new_i >= 0 && new_j >= 0 && new_i < colorMat.rows && new_j < colorMat.cols)
+				{
+					colorMatRevise.at<UINT32>(i, j) = colorMat.at<UINT32>(new_i, new_j);
+				}
+			}
+
+}
 //设置相机内参
-void k4a::KinectAPI::SetIntrinsicParam(cv::Mat& depthcameraMatrix,cv::Mat &depthdisCoeffs,cv::Mat& colorcameraMatrix,cv::Mat &colordisCoeffs)
+void k4a::KinectAPI::SetIntrinsicParam(cv::Mat& depthcameraMatrix, cv::Mat& depthdisCoeffs, cv::Mat& colorcameraMatrix, cv::Mat& colordisCoeffs)
 {
 
-	k4a_calibration_camera_t *depthCameraCalibration = &calibration.depth_camera_calibration;
-	k4a_calibration_camera_t *colorCameraCalibration = &calibration.color_camera_calibration;
+	k4a_calibration_camera_t* depthCameraCalibration = &calibration.depth_camera_calibration;
+	k4a_calibration_camera_t* colorCameraCalibration = &calibration.color_camera_calibration;
 	//kinect相机应该有4个传感器，下面的外参是4*4的一个矩阵，其中下标[i][j]应该是第i的传感器到第j个传感器的转化矩阵
 	//[0][1]应该是depth到color的矩阵，但是没测试过，以后用到在测试。
 	k4a_calibration_extrinsics_t extrinsics = calibration.extrinsics[0][0];
@@ -48,11 +104,11 @@ void k4a::KinectAPI::SetIntrinsicParam(cv::Mat& depthcameraMatrix,cv::Mat &depth
 	//cout << extrinsics.rotation[0] << " " << extrinsics.rotation[1] << " " << extrinsics.rotation[2] << endl;
 	//cout << extrinsics.translation[0] << " " << extrinsics.translation[1] << " " << extrinsics.translation[2] << endl;
 
-	k4a_calibration_extrinsics_t *depthExtrinsics= &depthCameraCalibration->extrinsics;
-	k4a_calibration_intrinsics_t *depthIntrinsics= &depthCameraCalibration->intrinsics;
+	k4a_calibration_extrinsics_t* depthExtrinsics = &depthCameraCalibration->extrinsics;
+	k4a_calibration_intrinsics_t* depthIntrinsics = &depthCameraCalibration->intrinsics;
 
-	k4a_calibration_extrinsics_t *colorExtrinsics= &colorCameraCalibration->extrinsics;
-	k4a_calibration_intrinsics_t *colorIntrinsics= &colorCameraCalibration->intrinsics;
+	k4a_calibration_extrinsics_t* colorExtrinsics = &colorCameraCalibration->extrinsics;
+	k4a_calibration_intrinsics_t* colorIntrinsics = &colorCameraCalibration->intrinsics;
 	////opencv自带的标定是算出了cx,cy,fx,fy, k1, k2, k3,p1,p2
 	//各个参数在Mat中的具体位置可以看opencv文档中关于calibrateCamera（）的介绍
 	depthIntrinsics->parameters.param.fx = depthcameraMatrix.at<double>(0, 0);
@@ -80,12 +136,12 @@ void k4a::KinectAPI::SetIntrinsicParam(cv::Mat& depthcameraMatrix,cv::Mat &depth
 //得到Mat格式的相机内参
 //cameraType是"depth"or"color"
 //discoeffs:k1, k2, p1, p2, k3
-void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix,cv::Mat &disCoeffs,const string cameraType)
+void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix, cv::Mat& disCoeffs, const string cameraType)
 {
 	assert(cameraType == "depth" || cameraType == "color");
 
-	k4a_calibration_camera_t CameraCalibration = 
-		cameraType == "depth" ? calibration.depth_camera_calibration:calibration.color_camera_calibration;
+	k4a_calibration_camera_t CameraCalibration =
+		cameraType == "depth" ? calibration.depth_camera_calibration : calibration.color_camera_calibration;
 	//kinect相机应该有4个传感器，下面的外参是4*4的一个矩阵，其中下标[i][j]应该是第i的传感器到第j个传感器的转化矩阵
 	//[0][1]应该是depth到color的矩阵，但是没测试过，以后用到在测试。
 	k4a_calibration_extrinsics_t extrinsics = calibration.extrinsics[0][0];
@@ -93,8 +149,8 @@ void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix,cv::Mat &disCoeffs,
 	//cout << extrinsics.rotation[0] << " " << extrinsics.rotation[1] << " " << extrinsics.rotation[2] << endl;
 	//cout << extrinsics.translation[0] << " " << extrinsics.translation[1] << " " << extrinsics.translation[2] << endl;
 
-	k4a_calibration_extrinsics_t Extrinsics= CameraCalibration.extrinsics;
-	k4a_calibration_intrinsics_t Intrinsics= CameraCalibration.intrinsics;
+	k4a_calibration_extrinsics_t Extrinsics = CameraCalibration.extrinsics;
+	k4a_calibration_intrinsics_t Intrinsics = CameraCalibration.intrinsics;
 	//cout << "depth resolution width,height:" << depthCameraCalibration.resolution_width 
 	//	<< " " << depthCameraCalibration.resolution_height << endl;//640*576
 	//测试得，下面rotation为单位阵，translation为0向量
@@ -129,28 +185,28 @@ void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix,cv::Mat &disCoeffs,
 
 	////opencv自带的标定是算出了cx,cy,fx,fy, k1, k2, k3,p1,p2
 	//各个参数在Mat中的具体位置可以看opencv文档中关于calibrateCamera（）的介绍
-	 cameraMatrix= cv::Mat(3, 3, CV_64FC1,cv::Scalar::all(0));
-	 disCoeffs = cv::Mat(1, 5, CV_64FC1, cv::Scalar::all(0));
-	 cameraMatrix.at<double>(0, 0) = Intrinsics.parameters.param.fx;
-	 cameraMatrix.at<double>(0, 2) = Intrinsics.parameters.param.cx;
-	 cameraMatrix.at<double>(1, 1) = Intrinsics.parameters.param.fy;
-	 cameraMatrix.at<double>(1, 2) = Intrinsics.parameters.param.cy;
-	 cameraMatrix.at<double>(2, 2) = 1;
+	cameraMatrix = cv::Mat(3, 3, CV_64FC1, cv::Scalar::all(0));
+	disCoeffs = cv::Mat(1, 5, CV_64FC1, cv::Scalar::all(0));
+	cameraMatrix.at<double>(0, 0) = Intrinsics.parameters.param.fx;
+	cameraMatrix.at<double>(0, 2) = Intrinsics.parameters.param.cx;
+	cameraMatrix.at<double>(1, 1) = Intrinsics.parameters.param.fy;
+	cameraMatrix.at<double>(1, 2) = Intrinsics.parameters.param.cy;
+	cameraMatrix.at<double>(2, 2) = 1;
 
-	 disCoeffs.at<double>(0) = Intrinsics.parameters.param.k1;
-	 disCoeffs.at<double>(1) = Intrinsics.parameters.param.k2;
-	 disCoeffs.at<double>(2) = Intrinsics.parameters.param.p1;
-	 disCoeffs.at<double>(3) = Intrinsics.parameters.param.p2;
-	 disCoeffs.at<double>(4) = Intrinsics.parameters.param.k3;
+	disCoeffs.at<double>(0) = Intrinsics.parameters.param.k1;
+	disCoeffs.at<double>(1) = Intrinsics.parameters.param.k2;
+	disCoeffs.at<double>(2) = Intrinsics.parameters.param.p1;
+	disCoeffs.at<double>(3) = Intrinsics.parameters.param.p2;
+	disCoeffs.at<double>(4) = Intrinsics.parameters.param.k3;
 
 }
 //得到深度相机到rgb的旋转矩阵和平移向量
-void k4a::KinectAPI::GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation,cv::Mat &Depth2ColorTranslation)
+void k4a::KinectAPI::GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation, cv::Mat& Depth2ColorTranslation)
 {
 
 	k4a_calibration_camera_t CameraCalibration = calibration.color_camera_calibration;
 
-	k4a_calibration_extrinsics_t colorExtrinsics= CameraCalibration.extrinsics;
+	k4a_calibration_extrinsics_t colorExtrinsics = CameraCalibration.extrinsics;
 
 	//测试得，下面rotation和translation有数值, 等于上面[0][1]时候的数值，也就是深度相机在RGB相机下的位姿
 	//0.999999 0.0015539 -8.61625e-05 -0.00153783 0.995126 0.098598 0.000238954 -0.0985978 0.995127
@@ -160,8 +216,8 @@ void k4a::KinectAPI::GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2Col
 	//	<< colorExtrinsics.rotation[6] << " " << colorExtrinsics.rotation[7] << " " << colorExtrinsics.rotation[8] << endl;
 	//cout << colorExtrinsics.translation[0] << " " << colorExtrinsics.translation[1] << " " << colorExtrinsics.translation[2] << endl;
 
-	Depth2ColorRotation= cv::Mat(3, 3, CV_64FC1,cv::Scalar::all(0));
-	Depth2ColorTranslation= cv::Mat(3, 1, CV_64FC1,cv::Scalar::all(0));
+	Depth2ColorRotation = cv::Mat(3, 3, CV_64FC1, cv::Scalar::all(0));
+	Depth2ColorTranslation = cv::Mat(3, 1, CV_64FC1, cv::Scalar::all(0));
 
 	Depth2ColorRotation.at<double>(0, 0) = colorExtrinsics.rotation[0];
 	Depth2ColorRotation.at<double>(0, 1) = colorExtrinsics.rotation[1];
@@ -178,17 +234,17 @@ void k4a::KinectAPI::GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2Col
 	Depth2ColorTranslation.at<double>(2, 0) = colorExtrinsics.translation[2];
 
 }
-void k4a::KinectAPI::ReleaseDevice() 
+void k4a::KinectAPI::ReleaseDevice()
 {
 
-    k4a_device_stop_cameras(device);
-    k4a_device_close(device);
+	k4a_device_stop_cameras(device);
+	k4a_device_close(device);
 }
 //TODO:可选择
-void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name,int waitkey)
+void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name, int waitkey)
 {
-	cv::namedWindow("name", CV_WINDOW_NORMAL);  
-	 cv::setWindowProperty("name", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+	cv::namedWindow("name", CV_WINDOW_NORMAL);
+	cv::setWindowProperty("name", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
 	cv::imshow("name", Img);
 	cv::waitKey(waitkey);
 	//cv::destroyAllWindows();
@@ -196,17 +252,17 @@ void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name,int waitkey)
 //depth已转到RGB相机视角
 void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color)
 {
-	k4a_capture_t capture ;
+	k4a_capture_t capture;
 	//TODO(zzq):这个capture是每调用一次捕捉一帧，还是之后可以一直通过get_color_image调用？
 	switch (k4a_device_get_capture(device, &capture, 10000))
 	{
-		case K4A_WAIT_RESULT_SUCCEEDED:
-			//printf("get capture success\n");
-			break;
-		case K4A_WAIT_RESULT_TIMEOUT:
-			throw "Timed out waiting for a capture";
-		case K4A_WAIT_RESULT_FAILED:
-			throw "Failed to read a capture";
+	case K4A_WAIT_RESULT_SUCCEEDED:
+		//printf("get capture success\n");
+		break;
+	case K4A_WAIT_RESULT_TIMEOUT:
+		throw "Timed out waiting for a capture";
+	case K4A_WAIT_RESULT_FAILED:
+		throw "Failed to read a capture";
 	}
 
 	k4a_image_t colorImage = k4a_capture_get_color_image(capture);
@@ -227,10 +283,10 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		k4a_transformation_t transformation = k4a_transformation_create(&calibration);
 		if (K4A_RESULT_SUCCEEDED == k4a_transformation_depth_image_to_color_camera(transformation, depthImageOld, depthImage))
 		{
-		//	printf(" | Depth16 res:%4dx%4d stride:%5d\n",
-		//		k4a_image_get_height_pixels(depthImage),
-		//		k4a_image_get_width_pixels(depthImage),
-		//		k4a_image_get_stride_bytes(depthImage));
+			//	printf(" | Depth16 res:%4dx%4d stride:%5d\n",
+			//		k4a_image_get_height_pixels(depthImage),
+			//		k4a_image_get_width_pixels(depthImage),
+			//		k4a_image_get_stride_bytes(depthImage));
 		}
 		else throw "transform depth image failed!";
 	}
@@ -247,7 +303,7 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 	}
 	else throw "Capture colorImage failed!";
 
-	if (irImage!= NULL)
+	if (irImage != NULL)
 	{
 		//printf(" | Ir16 res:%4dx%4d stride:%5d\n",
 		//	k4a_image_get_height_pixels(irImage),
@@ -288,17 +344,17 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 }
 k4a::Pixel  k4a::KinectAPI::ColorizeDepthToRGB(const DepthPixel& depthPixel,
 	const DepthPixel& min,
-	const DepthPixel& max) 
+	const DepthPixel& max)
 {
 	const uint8_t PixelMax = std::numeric_limits<uint8_t>::max();
-	Pixel result = { uint8_t(0),uint8_t(0),uint8_t(0), PixelMax};
+	Pixel result = { uint8_t(0),uint8_t(0),uint8_t(0), PixelMax };
 	if (depthPixel == 0)
 		return result;
 
 	uint16_t clampedValue = depthPixel;
 	clampedValue = std::min(clampedValue, max);
 	clampedValue = std::max(clampedValue, min);
-	
+
 	double hue = (clampedValue - min) / static_cast<double>(max - min);
 
 	const double range = 2.f / 3.f;
@@ -326,7 +382,7 @@ inline std::pair<uint16_t, uint16_t> k4a::KinectAPI::GetDepthModeRange(const k4a
 	case K4A_DEPTH_MODE_WFOV_UNBINNED:
 		return { (uint16_t)250, (uint16_t)2500 };
 	case K4A_DEPTH_MODE_PASSIVE_IR:
-	default :
+	default:
 		throw "Invalid depth mode!";
 	}
 }
@@ -382,7 +438,7 @@ std::pair<uint16_t, uint16_t> k4a::KinectAPI::GetIrLevels(const k4a_depth_mode_t
 	}
 }
 void k4a::KinectAPI::ColorizeDepthImage(const k4a_image_t& depthImage,
-	Pixel(KinectAPI::*visualizationFn)(const DepthPixel&, const DepthPixel&, const DepthPixel&),
+	Pixel(KinectAPI::* visualizationFn)(const DepthPixel&, const DepthPixel&, const DepthPixel&),
 	std::pair<uint16_t, uint16_t> expectedValueRange,
 	std::vector<Pixel>* buffer)
 {
@@ -397,7 +453,7 @@ void k4a::KinectAPI::ColorizeDepthImage(const k4a_image_t& depthImage,
 
 	const uint16_t* depthData = reinterpret_cast<const uint16_t*>(k4a_image_get_buffer(depthImage));
 
-	for(int h = 0;h < height; h++)
+	for (int h = 0; h < height; h++)
 		for (int w = 0; w < width; w++)
 		{
 			const size_t currentPixel = static_cast<size_t>(h * width + w);
@@ -406,105 +462,105 @@ void k4a::KinectAPI::ColorizeDepthImage(const k4a_image_t& depthImage,
 }
 void k4a::KinectAPI::GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr& cloud)
 {
-		k4a_capture_t capture ;
-		switch (k4a_device_get_capture(device, &capture, 10000))
-		{
-			case K4A_WAIT_RESULT_SUCCEEDED:
-				printf("get capture success\n");
-				break;
-			case K4A_WAIT_RESULT_TIMEOUT:
-				throw "Timed out waiting for a capture";
-			case K4A_WAIT_RESULT_FAILED:
-				throw "Failed to read a capture";
-		}
+	k4a_capture_t capture;
+	switch (k4a_device_get_capture(device, &capture, 10000))
+	{
+	case K4A_WAIT_RESULT_SUCCEEDED:
+		printf("get capture success\n");
+		break;
+	case K4A_WAIT_RESULT_TIMEOUT:
+		throw "Timed out waiting for a capture";
+	case K4A_WAIT_RESULT_FAILED:
+		throw "Failed to read a capture";
+	}
 
-		k4a_image_t colorImage = k4a_capture_get_color_image(capture);
-		k4a_image_t depthImage= k4a_capture_get_depth_image(capture);
+	k4a_image_t colorImage = k4a_capture_get_color_image(capture);
+	k4a_image_t depthImage = k4a_capture_get_depth_image(capture);
 
-		int color_image_width_pixels = k4a_image_get_width_pixels(colorImage);
-		int color_image_height_pixels = k4a_image_get_height_pixels(colorImage);
+	int color_image_width_pixels = k4a_image_get_width_pixels(colorImage);
+	int color_image_height_pixels = k4a_image_get_height_pixels(colorImage);
 
-		k4a_image_t transformed_depth_image= NULL;
-		k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
-			color_image_width_pixels,
-			color_image_height_pixels,
-			color_image_width_pixels * (int)sizeof(uint16_t),
-			&transformed_depth_image);
+	k4a_image_t transformed_depth_image = NULL;
+	k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
+		color_image_width_pixels,
+		color_image_height_pixels,
+		color_image_width_pixels * (int)sizeof(uint16_t),
+		&transformed_depth_image);
 
-		k4a_image_t point_cloud_image= NULL;
-		k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
-			color_image_width_pixels,
-			color_image_height_pixels,
-			color_image_width_pixels * 3 * (int)sizeof(uint16_t),
-			&point_cloud_image);
+	k4a_image_t point_cloud_image = NULL;
+	k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16,
+		color_image_width_pixels,
+		color_image_height_pixels,
+		color_image_width_pixels * 3 * (int)sizeof(uint16_t),
+		&point_cloud_image);
 
-		k4a_calibration_t calibration;
-		if (K4A_RESULT_SUCCEEDED !=
-			k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration))
-		{
-			throw ("Failed to get calibration\n");
-		}
+	k4a_calibration_t calibration;
+	if (K4A_RESULT_SUCCEEDED !=
+		k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration))
+	{
+		throw ("Failed to get calibration\n");
+	}
 
-		k4a_transformation_t transformation = k4a_transformation_create(&calibration);
+	k4a_transformation_t transformation = k4a_transformation_create(&calibration);
 
-		k4a_transformation_depth_image_to_color_camera(transformation, depthImage, transformed_depth_image);
-		k4a_transformation_depth_image_to_point_cloud(transformation, transformed_depth_image, K4A_CALIBRATION_TYPE_COLOR, point_cloud_image);
+	k4a_transformation_depth_image_to_color_camera(transformation, depthImage, transformed_depth_image);
+	k4a_transformation_depth_image_to_point_cloud(transformation, transformed_depth_image, K4A_CALIBRATION_TYPE_COLOR, point_cloud_image);
 
-		int width =k4a_image_get_width_pixels(colorImage);
-		int height =	k4a_image_get_height_pixels(colorImage);
+	int width = k4a_image_get_width_pixels(colorImage);
+	int height = k4a_image_get_height_pixels(colorImage);
 
-		cloud->width = width;
-		cloud->height = height;
-		cloud->is_dense = false;
-		cloud->points.resize(cloud->height * cloud->width);
+	cloud->width = width;
+	cloud->height = height;
+	cloud->is_dense = false;
+	cloud->points.resize(cloud->height * cloud->width);
 
 	//uint8_t* colorData = k4a_image_get_buffer(colorImage);
-		int16_t* point_cloud_image_data = (int16_t*)(void*)k4a_image_get_buffer(point_cloud_image);
-		uint8_t *color_image_data = k4a_image_get_buffer(colorImage);
+	int16_t* point_cloud_image_data = (int16_t*)(void*)k4a_image_get_buffer(point_cloud_image);
+	uint8_t* color_image_data = k4a_image_get_buffer(colorImage);
 
-	#ifdef VTK_VISUALIZATION
-		Eigen::Matrix3f mZ,mY;
-		mZ = Eigen::AngleAxisf(-M_PI, Eigen::Vector3f::UnitZ());
-		mY = Eigen::AngleAxisf(-M_PI, Eigen::Vector3f::UnitY());
-	#endif
+#ifdef VTK_VISUALIZATION
+	Eigen::Matrix3f mZ, mY;
+	mZ = Eigen::AngleAxisf(-M_PI, Eigen::Vector3f::UnitZ());
+	mY = Eigen::AngleAxisf(-M_PI, Eigen::Vector3f::UnitY());
+#endif
 
-		for (int i = 0; i < width * height; ++i)
+	for (int i = 0; i < width * height; ++i)
+	{
+		pcl::PointXYZRGBA point;
+
+		point.x = point_cloud_image_data[3 * i + 0] / 1000.0f;
+		point.y = point_cloud_image_data[3 * i + 1] / 1000.0f;
+		point.z = point_cloud_image_data[3 * i + 2] / 1000.0f;
+		//printf("%f ", point.z);
+
+		if (point.z == 0)
 		{
-			pcl::PointXYZRGBA point;
-
-			point.x = point_cloud_image_data[3 * i + 0] / 1000.0f;
-			point.y = point_cloud_image_data[3 * i + 1] / 1000.0f;
-			point.z = point_cloud_image_data[3 * i + 2] / 1000.0f;
-			//printf("%f ", point.z);
-
-			if (point.z == 0)
-			{
-				continue;
-			}
-
-	#ifdef VTK_VISUALIZATION
-			point.getVector3fMap() = mZ * point.getVector3fMap();
-			point.getVector3fMap() = mY * point.getVector3fMap();
-	#endif
-
-			point.b = color_image_data[4 * i + 0];
-			point.g = color_image_data[4 * i + 1];
-			point.r = color_image_data[4 * i + 2];
-			point.a = color_image_data[4 * i + 3];
-
-			if (point.b == 0 && point.g == 0 && point.r == 0 && point.a == 0)
-			{
-				continue;
-			}
-
-			cloud->points[i] = point;
+			continue;
 		}
-		k4a_image_release(point_cloud_image);
-		k4a_image_release(transformed_depth_image);
-		k4a_image_release(depthImage);
-		k4a_image_release(colorImage);
-		//k4a_image_release(irImage);
-		k4a_capture_release(capture);
+
+#ifdef VTK_VISUALIZATION
+		point.getVector3fMap() = mZ * point.getVector3fMap();
+		point.getVector3fMap() = mY * point.getVector3fMap();
+#endif
+
+		point.b = color_image_data[4 * i + 0];
+		point.g = color_image_data[4 * i + 1];
+		point.r = color_image_data[4 * i + 2];
+		point.a = color_image_data[4 * i + 3];
+
+		if (point.b == 0 && point.g == 0 && point.r == 0 && point.a == 0)
+		{
+			continue;
+		}
+
+		cloud->points[i] = point;
+	}
+	k4a_image_release(point_cloud_image);
+	k4a_image_release(transformed_depth_image);
+	k4a_image_release(depthImage);
+	k4a_image_release(colorImage);
+	//k4a_image_release(irImage);
+	k4a_capture_release(capture);
 }
 void k4a::KinectAPI::GetXYZAtCameraView(const cv::Point2i point2D, double depth, cv::Point3f& point3D)
 {
