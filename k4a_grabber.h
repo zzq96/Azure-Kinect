@@ -1,10 +1,6 @@
 #pragma once
 #include <k4a/k4a.hpp>
 
-#include <pcl/io/boost.h>
-#include <pcl/io/grabber.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui_c.h>
 
@@ -33,7 +29,6 @@ public:
 	void GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color);
 	void GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation, cv::Mat& Depth2ColorTranslation);
 	void ShowOpenCVImage(cv::Mat &Img, std::string name, int waitkey);
-	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
 	void undistort(cv::Mat& ImgOld, cv::Mat& Img, const std::string& type);
 	void ConvertColor2Depth(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& colorMatRevise);
 	//得到Mat格式的相机内参

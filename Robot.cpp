@@ -58,21 +58,21 @@ double Robot::getDepthValue(cv::Mat depthMat, int row, int col, int size)
 	for (int r = std::max(0, row - size); r <= std::min(rows - 1, row + size); r++)
 	{
 		for (int c = std::max(0, col - size); c <= std::min(cols - 1, col + size); c++)
-			if (depthMat.at<UINT16>(r, c) != 0)
+			if (depthMat.at<cv::uint16_t>(r, c) != 0)
 			{
 				cnt++;
-				sum += depthMat.at<UINT16>(r, c);
+				sum += depthMat.at<cv::uint16_t>(r, c);
 			}
 	}
 	assert(cnt);
 	return sum / cnt;
 }
 //计算点point2D的深度，为了降低噪声影响，以周围2*size大小的正方形区域为采样点。
-UINT16 Robot::getDepth(const cv::Mat & depthMat, cv::Mat &point2D)
+cv::uint16_t Robot::getDepth(const cv::Mat & depthMat, cv::Mat &point2D)
 {
 	int x = (int)point2D.at<double>(0, 0);
 	int y = (int)point2D.at<double>(1, 0);
-	UINT16 Zc = getDepthValue(depthMat, y, x, 6);
+	cv::uint16_t Zc = getDepthValue(depthMat, y, x, 6);
 	//TODO:加入边界判断
 	return Zc;
 }
@@ -122,7 +122,7 @@ cv::Mat Robot::RT2HomogeneousMatrix(const cv::Mat& R, const cv::Mat& T)
 	return HomoMtr;
 }
 //传入像素坐标系的点，返回机械臂坐标系下的坐标
-void Robot::calPoint3D(cv::Mat point2D, cv::Point3f& real, UINT16 Zc)
+void Robot::calPoint3D(cv::Mat point2D, cv::Point3f& real, cv::uint16_t Zc)
 {
 	assert(Zc != 0);
 	cv::Mat point3D = depth_R_base2cam.t() * (kinect->depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
@@ -231,7 +231,7 @@ cv::Mat Robot::calRotationMatrix(cv::Mat& depthMat,  cv::Point2f* R, double scal
 }
 //根据
 /*不考虑z轴*/
-double Robot::calAngle(cv::Point2f* R, int h, int w, UINT16 depth)
+double Robot::calAngle(cv::Point2f* R, int h, int w, cv::uint16_t depth)
 {
 	int size = 4;
 	cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
