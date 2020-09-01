@@ -165,12 +165,14 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="plane_detection.cpp" />
     <ClCompile Include="SocketRobot.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="flask.h" />
     <ClInclude Include="k4a_grabber.h" />
     <ClInclude Include="plane_detection.h" />
     <ClInclude Include="SocketRobot.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

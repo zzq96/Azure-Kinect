@@ -7,6 +7,7 @@ cv::Mat depth_Homo_cam2base	 =(cv::Mat_<double>(4,4)<<2.1717400918944269e-02, 9.
     3.5015016682124605e+02, 6.9277887456734161e-03,
 	1.2707412311922936e-01, -9.9186903015296057e-01,
 	1.3214478208789160e+03, 0., 0., 0. ,1.);
+
 cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, double*& center, 
 	double*& x_axis, double*& y_axis, double*& z_axis, vector<VertexType>& highestPlanePoints, cv::Point2f* vertices) {
 	int start_x = 240;
@@ -35,7 +36,9 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, d
 			point3d = (cv::Mat_<double>(4,1)<<plane_detections[i].plane_filter.extractedPlanes[j]->center[0],
 				plane_detections[i].plane_filter.extractedPlanes[j]->center[1],
 				plane_detections[i].plane_filter.extractedPlanes[j]->center[2],1);
+			//将深度相机坐标系下的坐标转化为机械臂坐标系
 			point3d = depth_Homo_cam2base * point3d;
+			//选出最高的快递
 			if (point3d.at<double>(2, 0) > highestPlaneHeight) {
 				highestPlaneHeight = point3d.at<double>(2, 0);
 				highest_index = i;

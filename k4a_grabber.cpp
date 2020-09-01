@@ -35,6 +35,7 @@ k4a::KinectAPI::KinectAPI()
 	}
 }
 
+//设置相机内参
 void k4a::KinectAPI::SetIntrinsicParam(cv::Mat& depthcameraMatrix,cv::Mat &depthdisCoeffs,cv::Mat& colorcameraMatrix,cv::Mat &colordisCoeffs)
 {
 
@@ -143,6 +144,7 @@ void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix,cv::Mat &disCoeffs,
 	 disCoeffs.at<float>(4) = Intrinsics.parameters.param.k3;
 
 }
+//得到深度相机到rgb的旋转矩阵和平移向量
 void k4a::KinectAPI::GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation,cv::Mat &Depth2ColorTranslation)
 {
 
@@ -199,7 +201,7 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 	switch (k4a_device_get_capture(device, &capture, 10000))
 	{
 		case K4A_WAIT_RESULT_SUCCEEDED:
-			printf("get capture success\n");
+			//printf("get capture success\n");
 			break;
 		case K4A_WAIT_RESULT_TIMEOUT:
 			throw "Timed out waiting for a capture";
@@ -225,10 +227,10 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		k4a_transformation_t transformation = k4a_transformation_create(&calibration);
 		if (K4A_RESULT_SUCCEEDED == k4a_transformation_depth_image_to_color_camera(transformation, depthImageOld, depthImage))
 		{
-			printf(" | Depth16 res:%4dx%4d stride:%5d\n",
-				k4a_image_get_height_pixels(depthImage),
-				k4a_image_get_width_pixels(depthImage),
-				k4a_image_get_stride_bytes(depthImage));
+		//	printf(" | Depth16 res:%4dx%4d stride:%5d\n",
+		//		k4a_image_get_height_pixels(depthImage),
+		//		k4a_image_get_width_pixels(depthImage),
+		//		k4a_image_get_stride_bytes(depthImage));
 		}
 		else throw "transform depth image failed!";
 	}
@@ -237,20 +239,20 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 
 	if (colorImage != NULL)
 	{
-		printf(" | Color16 res:%4dx%4d stride:%5d\n",
-			k4a_image_get_height_pixels(colorImage),
-			k4a_image_get_width_pixels(colorImage),
-			k4a_image_get_stride_bytes(colorImage));
+		//printf(" | Color16 res:%4dx%4d stride:%5d\n",
+		//	k4a_image_get_height_pixels(colorImage),
+		//	k4a_image_get_width_pixels(colorImage),
+		//	k4a_image_get_stride_bytes(colorImage));
 
 	}
 	else throw "Capture colorImage failed!";
 
 	if (irImage!= NULL)
 	{
-		printf(" | Ir16 res:%4dx%4d stride:%5d\n",
-			k4a_image_get_height_pixels(irImage),
-			k4a_image_get_width_pixels(irImage),
-			k4a_image_get_stride_bytes(irImage));
+		//printf(" | Ir16 res:%4dx%4d stride:%5d\n",
+		//	k4a_image_get_height_pixels(irImage),
+		//	k4a_image_get_width_pixels(irImage),
+		//	k4a_image_get_stride_bytes(irImage));
 
 	}
 	else throw "Capture irImage failed!";

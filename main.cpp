@@ -19,7 +19,7 @@
 #include"SocketRobot.h"
 #include "flask.h"
 
-const double PI = 3.1415926;
+//原始的深度图，深度图的伪彩色图，红外线图，红外线伪彩色图
 cv::Mat depthMat,colorMat, depthcolorMat, irMat, ircolorMat;
 cv::Mat depthMatOld,colorMatOld, depthcolorMatOld, irMatOld, ircolorMatOld;
 cv::Mat Depth2ColorRotation, Depth2ColorTranslation;
@@ -32,6 +32,7 @@ cv::Mat depth_R_base2cam, depth_t_base2cam;
 cv::Mat color_R_cam2base, color_t_cam2base;
 cv::Mat depth_R_cam2base, depth_t_cam2base;
 // Checks if a matrix is a valid rotation matrix.
+const double PI = 3.1415926;
 bool isRotationMatrix(cv::Mat &R)
 {
     cv::Mat Rt;
@@ -320,14 +321,12 @@ int main()
 	cv::FileStorage fs(caliberation_camera_file, cv::FileStorage::READ); //读取标定XML文件  
 	//读取深度图的内参矩阵
 	fs["depth_cameraMatrix"] >> depthCameraMatrix;
-	depthCameraMatrix.convertTo(depthCameraMatrix, CV_32F);
-	cout << depthCameraMatrix.type() << endl;
+
 	fs["depth_distCoeffs"] >> depthDistCoeffs;
 	cout << "depthCameraMatrix" << depthCameraMatrix << endl;
 	cout << "depthdisCoeffs" << depthDistCoeffs << endl;
 	//读取color图的内参矩阵
 	fs["color_cameraMatrix"] >> colorCameraMatrix;
-	colorCameraMatrix.convertTo(colorCameraMatrix, CV_32F);
 	cout << colorCameraMatrix.type() << endl;
 	fs["color_distCoeffs"] >> colorDistCoeffs;
 	cout << "colorCameraMatrix" << colorCameraMatrix << endl;
@@ -392,13 +391,8 @@ int main()
 					if (new_i >= 0 && new_j >= 0 && new_i < colorMat.rows && new_j < colorMat.cols)
 					{
 						colorMatRevise.at<UINT32>(i, j) = colorMat.at<UINT32>(new_i, new_j);
-						//cout << depthcolorMat.at<UINT32>(new_i, new_j) << endl;
 					}
 				}
-
-			//kinect.ShowOpenCVImage(colorMat, "img_color");
-			//kinect.ShowOpenCVImage(colorMatRevise, "img_color");
-			//kinect.ShowOpenCVImage(depthcolorMat, "img_color");
 
 			double* center;
 			double* normal;
@@ -408,8 +402,7 @@ int main()
 			cv::Point2f vertices[4];
 			vector<cv::Mat> masks;
 			getMasks(colorMatRevise,  masks);
-			cout << "有几个快递" << endl;
-			cout << masks.size() << endl;
+			cout << "有"<<masks.size()<<"个快递" << endl;
 			string name = "imgs/img" + std::to_string(cnt);
 			double* x_axis, * y_axis, * z_axis;
 			colorMatRevise = processImg(colorMatRevise, depthMat, masks, center, x_axis, y_axis, z_axis, highestPlanePoints_3D, vertices);
@@ -504,15 +497,15 @@ int main()
 				//平面法向量
 				cv::Mat rotationMatrix = calRotationMatrix(vertices, 0.6);
 				cv::Vec3f eulerAngles = rotationMatrixToEulerAngles(rotationMatrix);
-				cout << "物体的旋转矩阵为" << endl;
+				cout << "最上方物体的旋转矩阵:" << endl;
 				cout << rotationMatrix << endl;
 
 
 				cv::Mat point3D = depth_R_base2cam.t() * (depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
 				
-				cout << "坐标为:" << endl;
+				cout << "坐标:" << endl;
 				cout << point3D << endl;
-				cout << "物体的欧拉角为" << endl;
+				cout << "欧拉角:" << endl;
 				cout << eulerAngles << endl;
 				
 				float coords[12];
