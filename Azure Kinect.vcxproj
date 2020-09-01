@@ -144,7 +144,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;BOOST_USE_WINDOWS_H;NOMINMAX;VTK_VISUALIZATION;_SILENCE_FPOS_SEEKPOS_DEPRECATION_WARNING;BUILDING_LIBCURL;HTTP_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;BOOST_USE_WINDOWS_H;NOMINMAX;VTK_VISUALIZATION;_SILENCE_FPOS_SEEKPOS_DEPRECATION_WARNING;BUILDING_LIBCURL;HTTP_ONLY;ROBO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>

@@ -131,6 +131,11 @@ void Robot::calPoint3D(cv::Mat point2D, cv::Point3f& real, UINT16 Zc)
 	real.y = point3D.at<double>(1, 0);
 	real.z = point3D.at<double>(2, 0);
 }
+cv::Mat Robot::calPoint3D(cv::Mat & depthMat, cv::Mat point2D)
+{
+	double Zc = getDepthValue(depthMat, point2D.at<double>(1, 0), point2D.at<double>(0, 0), 6);
+	return depth_R_base2cam.t() * (kinect->depthCameraMatrix.inv() * Zc * point2D - depth_t_base2cam);
+}
 //根据外接矩形计算快递的旋转矩阵
 cv::Mat Robot::calRotationMatrix(cv::Mat& depthMat,  cv::Point2f* R, double scale)
 {

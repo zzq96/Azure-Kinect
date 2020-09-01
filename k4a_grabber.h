@@ -32,7 +32,7 @@ public:
 	//depthcolor is a pseudo-color image in 8UC4，将深度图转化为伪彩色图像以便可视化
 	void GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& depthcolorMat, cv::Mat& irMat, bool isDepth2Color);
 	void GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2ColorRotation, cv::Mat& Depth2ColorTranslation);
-	void ShowOpenCVImage(cv::Mat Img, std::string name, int waitkey);
+	void ShowOpenCVImage(cv::Mat &Img, std::string name, int waitkey);
 	void GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud);
 	void undistort(cv::Mat& ImgOld, cv::Mat& Img, const std::string& type);
 	void ConvertColor2Depth(cv::Mat& colorMat, cv::Mat& depthMat, cv::Mat& colorMatRevise);

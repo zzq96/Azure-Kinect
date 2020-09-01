@@ -241,7 +241,7 @@ void k4a::KinectAPI::ReleaseDevice()
 	k4a_device_close(device);
 }
 //TODO:¿ÉÑ¡Ôñ
-void k4a::KinectAPI::ShowOpenCVImage(cv::Mat Img, std::string name, int waitkey)
+void k4a::KinectAPI::ShowOpenCVImage(cv::Mat &Img, std::string name, int waitkey)
 {
 	cv::namedWindow("name", CV_WINDOW_NORMAL);
 	cv::setWindowProperty("name", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);

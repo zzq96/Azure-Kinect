@@ -33,6 +33,7 @@ public:
 	cv::Mat RT2HomogeneousMatrix(const cv::Mat& R, const cv::Mat& T);
 	//传入像素坐标系的点，返回机械臂坐标系下的坐标
 	void calPoint3D(cv::Mat point2D, cv::Point3f& real, UINT16 Zc);
+	cv::Mat calPoint3D(cv::Mat& depthMat, cv::Mat point2D);
 	//根据外接矩形计算快递的旋转矩阵
 	cv::Mat calRotationMatrix(cv::Mat& depthMat, cv::Point2f* R, double scale);
 	//根据
