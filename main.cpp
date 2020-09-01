@@ -404,7 +404,7 @@ void TestGetXYZAtCameraView();
 k4a::KinectAPI kinect;
 int main()
 {
-	bool useRobot = true;
+	bool useRobot = false;
 	
 	string caliberation_camera_file = "caliberation_camera.xml";
 	string Homo_cam2base_file = "Homo_cam2base.xml";
