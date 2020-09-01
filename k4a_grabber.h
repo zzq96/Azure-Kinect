@@ -45,7 +45,7 @@ public:
 	//TODO(zzq):相机坐标系下的xyz值
 	//得到相机坐标系下的xyz值
 	//输入图像上的像素坐标，输出相机坐标系下的xyz值
-	void GetXYZAtCameraView(const cv::Point2i point2D, float depth, cv::Point3f &point3D);
+	void GetXYZAtCameraView(const cv::Point2i point2D, double depth, cv::Point3f &point3D);
 	//用完相机后，将相机资源释放。
 	void ReleaseDevice();
 
@@ -62,7 +62,7 @@ private:
 		const DepthPixel& max);
 	//找到深度值的最大的最小值
 	inline std::pair<uint16_t, uint16_t> GetDepthModeRange(const k4a_depth_mode_t depthMode);
-	inline void ColorConvertHSVToRGB(float h, float s, float v, float& r, float& g, float& b);
+	inline void ColorConvertHSVToRGB(double h, double s, double v, double& r, double& g, double& b);
 	//返回明亮程度的阈值，正常时IR图的输出范围是[0,100]
 	std::pair<uint16_t, uint16_t> GetIrLevels(const k4a_depth_mode_t depthMode);
 	//将深度图伪彩色化，方便观察

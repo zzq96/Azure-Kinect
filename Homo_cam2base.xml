@@ -3,7 +3,7 @@
 <color_Homo_cam2base type_id="opencv-matrix">
   <rows>4</rows>
   <cols>4</cols>
-  <dt>f</dt>
+  <dt>d</dt>
   <data>
     2.9457033829176173e-02 9.9907744355021078e-01 3.1249719153318811e-02
     2.9411316673519804e+02 9.9955924368663951e-01
@@ -14,7 +14,7 @@
 <depth_Homo_cam2base type_id="opencv-matrix">
   <rows>4</rows>
   <cols>4</cols>
-  <dt>f</dt>
+  <dt>d</dt>
   <data>
     2.1717400918944269e-02 9.9163976363198392e-01 1.2719643737632352e-01
     2.9420400367679542e+02 9.9974014635825281e-01

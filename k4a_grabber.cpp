@@ -55,27 +55,27 @@ void k4a::KinectAPI::SetIntrinsicParam(cv::Mat& depthcameraMatrix,cv::Mat &depth
 	k4a_calibration_intrinsics_t *colorIntrinsics= &colorCameraCalibration->intrinsics;
 	////opencv自带的标定是算出了cx,cy,fx,fy, k1, k2, k3,p1,p2
 	//各个参数在Mat中的具体位置可以看opencv文档中关于calibrateCamera（）的介绍
-	depthIntrinsics->parameters.param.fx = depthcameraMatrix.at<float>(0, 0);
-	depthIntrinsics->parameters.param.cx = depthcameraMatrix.at<float>(0, 2);
-	depthIntrinsics->parameters.param.fy = depthcameraMatrix.at<float>(1, 1);
-	depthIntrinsics->parameters.param.cy = depthcameraMatrix.at<float>(1, 2);
+	depthIntrinsics->parameters.param.fx = depthcameraMatrix.at<double>(0, 0);
+	depthIntrinsics->parameters.param.cx = depthcameraMatrix.at<double>(0, 2);
+	depthIntrinsics->parameters.param.fy = depthcameraMatrix.at<double>(1, 1);
+	depthIntrinsics->parameters.param.cy = depthcameraMatrix.at<double>(1, 2);
 
-	depthIntrinsics->parameters.param.k1 = depthdisCoeffs.at<float>(0);
-	depthIntrinsics->parameters.param.k2 = depthdisCoeffs.at<float>(1);
-	depthIntrinsics->parameters.param.p1 = depthdisCoeffs.at<float>(2);
-	depthIntrinsics->parameters.param.p2 = depthdisCoeffs.at<float>(3);
-	depthIntrinsics->parameters.param.k3 = depthdisCoeffs.at<float>(4);
+	depthIntrinsics->parameters.param.k1 = depthdisCoeffs.at<double>(0);
+	depthIntrinsics->parameters.param.k2 = depthdisCoeffs.at<double>(1);
+	depthIntrinsics->parameters.param.p1 = depthdisCoeffs.at<double>(2);
+	depthIntrinsics->parameters.param.p2 = depthdisCoeffs.at<double>(3);
+	depthIntrinsics->parameters.param.k3 = depthdisCoeffs.at<double>(4);
 
-	colorIntrinsics->parameters.param.fx = colorcameraMatrix.at<float>(0, 0);
-	colorIntrinsics->parameters.param.cx = colorcameraMatrix.at<float>(0, 2);
-	colorIntrinsics->parameters.param.fy = colorcameraMatrix.at<float>(1, 1);
-	colorIntrinsics->parameters.param.cy = colorcameraMatrix.at<float>(1, 2);
+	colorIntrinsics->parameters.param.fx = colorcameraMatrix.at<double>(0, 0);
+	colorIntrinsics->parameters.param.cx = colorcameraMatrix.at<double>(0, 2);
+	colorIntrinsics->parameters.param.fy = colorcameraMatrix.at<double>(1, 1);
+	colorIntrinsics->parameters.param.cy = colorcameraMatrix.at<double>(1, 2);
 
-	colorIntrinsics->parameters.param.k1 = colordisCoeffs.at<float>(0);
-	colorIntrinsics->parameters.param.k2 = colordisCoeffs.at<float>(1);
-	colorIntrinsics->parameters.param.p1 = colordisCoeffs.at<float>(2);
-	colorIntrinsics->parameters.param.p2 = colordisCoeffs.at<float>(3);
-	colorIntrinsics->parameters.param.k3 = colordisCoeffs.at<float>(4);
+	colorIntrinsics->parameters.param.k1 = colordisCoeffs.at<double>(0);
+	colorIntrinsics->parameters.param.k2 = colordisCoeffs.at<double>(1);
+	colorIntrinsics->parameters.param.p1 = colordisCoeffs.at<double>(2);
+	colorIntrinsics->parameters.param.p2 = colordisCoeffs.at<double>(3);
+	colorIntrinsics->parameters.param.k3 = colordisCoeffs.at<double>(4);
 }
 //得到Mat格式的相机内参
 //cameraType是"depth"or"color"
@@ -129,19 +129,19 @@ void k4a::KinectAPI::GetIntrinsicParam(cv::Mat& cameraMatrix,cv::Mat &disCoeffs,
 
 	////opencv自带的标定是算出了cx,cy,fx,fy, k1, k2, k3,p1,p2
 	//各个参数在Mat中的具体位置可以看opencv文档中关于calibrateCamera（）的介绍
-	 cameraMatrix= cv::Mat(3, 3, CV_32FC1,cv::Scalar::all(0));
-	 disCoeffs = cv::Mat(1, 5, CV_32FC1, cv::Scalar::all(0));
-	 cameraMatrix.at<float>(0, 0) = Intrinsics.parameters.param.fx;
-	 cameraMatrix.at<float>(0, 2) = Intrinsics.parameters.param.cx;
-	 cameraMatrix.at<float>(1, 1) = Intrinsics.parameters.param.fy;
-	 cameraMatrix.at<float>(1, 2) = Intrinsics.parameters.param.cy;
-	 cameraMatrix.at<float>(2, 2) = 1;
+	 cameraMatrix= cv::Mat(3, 3, CV_64FC1,cv::Scalar::all(0));
+	 disCoeffs = cv::Mat(1, 5, CV_64FC1, cv::Scalar::all(0));
+	 cameraMatrix.at<double>(0, 0) = Intrinsics.parameters.param.fx;
+	 cameraMatrix.at<double>(0, 2) = Intrinsics.parameters.param.cx;
+	 cameraMatrix.at<double>(1, 1) = Intrinsics.parameters.param.fy;
+	 cameraMatrix.at<double>(1, 2) = Intrinsics.parameters.param.cy;
+	 cameraMatrix.at<double>(2, 2) = 1;
 
-	 disCoeffs.at<float>(0) = Intrinsics.parameters.param.k1;
-	 disCoeffs.at<float>(1) = Intrinsics.parameters.param.k2;
-	 disCoeffs.at<float>(2) = Intrinsics.parameters.param.p1;
-	 disCoeffs.at<float>(3) = Intrinsics.parameters.param.p2;
-	 disCoeffs.at<float>(4) = Intrinsics.parameters.param.k3;
+	 disCoeffs.at<double>(0) = Intrinsics.parameters.param.k1;
+	 disCoeffs.at<double>(1) = Intrinsics.parameters.param.k2;
+	 disCoeffs.at<double>(2) = Intrinsics.parameters.param.p1;
+	 disCoeffs.at<double>(3) = Intrinsics.parameters.param.p2;
+	 disCoeffs.at<double>(4) = Intrinsics.parameters.param.k3;
 
 }
 //得到深度相机到rgb的旋转矩阵和平移向量
@@ -160,22 +160,22 @@ void k4a::KinectAPI::GetRotationAndTranslationFromDepth2Color(cv::Mat& Depth2Col
 	//	<< colorExtrinsics.rotation[6] << " " << colorExtrinsics.rotation[7] << " " << colorExtrinsics.rotation[8] << endl;
 	//cout << colorExtrinsics.translation[0] << " " << colorExtrinsics.translation[1] << " " << colorExtrinsics.translation[2] << endl;
 
-	Depth2ColorRotation= cv::Mat(3, 3, CV_32FC1,cv::Scalar::all(0));
-	Depth2ColorTranslation= cv::Mat(3, 1, CV_32FC1,cv::Scalar::all(0));
+	Depth2ColorRotation= cv::Mat(3, 3, CV_64FC1,cv::Scalar::all(0));
+	Depth2ColorTranslation= cv::Mat(3, 1, CV_64FC1,cv::Scalar::all(0));
 
-	Depth2ColorRotation.at<float>(0, 0) = colorExtrinsics.rotation[0];
-	Depth2ColorRotation.at<float>(0, 1) = colorExtrinsics.rotation[1];
-	Depth2ColorRotation.at<float>(0, 2) = colorExtrinsics.rotation[2];
-	Depth2ColorRotation.at<float>(1, 0) = colorExtrinsics.rotation[3];
-	Depth2ColorRotation.at<float>(1, 1) = colorExtrinsics.rotation[4];
-	Depth2ColorRotation.at<float>(1, 2) = colorExtrinsics.rotation[5];
-	Depth2ColorRotation.at<float>(2, 0) = colorExtrinsics.rotation[6];
-	Depth2ColorRotation.at<float>(2, 1) = colorExtrinsics.rotation[7];
-	Depth2ColorRotation.at<float>(2, 2) = colorExtrinsics.rotation[8];
+	Depth2ColorRotation.at<double>(0, 0) = colorExtrinsics.rotation[0];
+	Depth2ColorRotation.at<double>(0, 1) = colorExtrinsics.rotation[1];
+	Depth2ColorRotation.at<double>(0, 2) = colorExtrinsics.rotation[2];
+	Depth2ColorRotation.at<double>(1, 0) = colorExtrinsics.rotation[3];
+	Depth2ColorRotation.at<double>(1, 1) = colorExtrinsics.rotation[4];
+	Depth2ColorRotation.at<double>(1, 2) = colorExtrinsics.rotation[5];
+	Depth2ColorRotation.at<double>(2, 0) = colorExtrinsics.rotation[6];
+	Depth2ColorRotation.at<double>(2, 1) = colorExtrinsics.rotation[7];
+	Depth2ColorRotation.at<double>(2, 2) = colorExtrinsics.rotation[8];
 
-	Depth2ColorTranslation.at<float>(0, 0) = colorExtrinsics.translation[0];
-	Depth2ColorTranslation.at<float>(1, 0) = colorExtrinsics.translation[1];
-	Depth2ColorTranslation.at<float>(2, 0) = colorExtrinsics.translation[2];
+	Depth2ColorTranslation.at<double>(0, 0) = colorExtrinsics.translation[0];
+	Depth2ColorTranslation.at<double>(1, 0) = colorExtrinsics.translation[1];
+	Depth2ColorTranslation.at<double>(2, 0) = colorExtrinsics.translation[2];
 
 }
 void k4a::KinectAPI::ReleaseDevice() 
@@ -299,13 +299,13 @@ k4a::Pixel  k4a::KinectAPI::ColorizeDepthToRGB(const DepthPixel& depthPixel,
 	clampedValue = std::min(clampedValue, max);
 	clampedValue = std::max(clampedValue, min);
 	
-	float hue = (clampedValue - min) / static_cast<float>(max - min);
+	double hue = (clampedValue - min) / static_cast<double>(max - min);
 
-	const float range = 2.f / 3.f;
+	const double range = 2.f / 3.f;
 	hue *= range;
 	hue = range - hue;
 
-	float fRed = 0.f, fGreen = 0.f, fBlue = 0.f;
+	double fRed = 0.f, fGreen = 0.f, fBlue = 0.f;
 	ColorConvertHSVToRGB(hue, 1.f, 1.f, fRed, fGreen, fBlue);//HSI转化为RGB
 	result.Red = static_cast<uint8_t>(fRed * PixelMax);
 	result.Green = static_cast<uint8_t>(fGreen * PixelMax);
@@ -330,7 +330,7 @@ inline std::pair<uint16_t, uint16_t> k4a::KinectAPI::GetDepthModeRange(const k4a
 		throw "Invalid depth mode!";
 	}
 }
-inline void k4a::KinectAPI::ColorConvertHSVToRGB(float h, float s, float v, float& out_r, float& out_g, float& out_b)
+inline void k4a::KinectAPI::ColorConvertHSVToRGB(double h, double s, double v, double& out_r, double& out_g, double& out_b)
 {
 	if (s == 0.f)
 	{
@@ -339,9 +339,9 @@ inline void k4a::KinectAPI::ColorConvertHSVToRGB(float h, float s, float v, floa
 	}
 	h = fmodf(h, 1.0f) / (60.f / 360.f);
 	int i = (int)h;
-	float f = h - (float)i;
-	float p = v * (1.f - s);
-	float q = v * (1.f - s * f);
+	double f = h - (double)i;
+	double p = v * (1.f - s);
+	double q = v * (1.f - s * f);
 	float t = v * (1.f - s * (1.f - f));
 	switch (i)
 	{
@@ -506,7 +506,7 @@ void k4a::KinectAPI::GetPointCloud(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr& clou
 		//k4a_image_release(irImage);
 		k4a_capture_release(capture);
 }
-void k4a::KinectAPI::GetXYZAtCameraView(const cv::Point2i point2D, float depth, cv::Point3f& point3D)
+void k4a::KinectAPI::GetXYZAtCameraView(const cv::Point2i point2D, double depth, cv::Point3f& point3D)
 {
 	//OpenCV类型的变量转化为kinect形式
 	k4a_float2_t point2d;
