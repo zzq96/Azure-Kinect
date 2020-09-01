@@ -72,7 +72,6 @@ int main()
 
 		double* x_axis, * y_axis, * z_axis;
 		colorMatRevise = processImg(colorMatRevise, depthMat, masks, center, x_axis, y_axis, z_axis, highestPlanePoints_3D, vertices);
-		kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
 
 		//保存图片，用于出问题debug
 		string name = "Data/imgs/img" + std::to_string(cnt);
@@ -85,46 +84,89 @@ int main()
 			Sleep(1000);
 			continue;
 		}
+		//pca
+		cv::Mat centerMat = (cv::Mat_<double>(3, 1) << center[0], center[1], center[2]);
+		cv::Mat eigenvectors = (cv::Mat_<double>(3, 3)<< x_axis[0], y_axis[0], z_axis[0],
+			x_axis[1], y_axis[1], z_axis[1], 
+			x_axis[2], y_axis[2], z_axis[2]);
+		cout << x_axis[0] << " " << x_axis[1] << " " << x_axis[2] << endl;
+		cout << eigenvectors << endl;
 
-		//根据外接矩形，计算快递中心
-		double x = 0, y = 0;
-		for (int j = 0; j < 4; j++)
+		cout << centerMat << endl;
+		cv::Mat express2depthHomo = rob.RT2HomogeneousMatrix(eigenvectors, centerMat);
+		cout << rob.depth_Homo_cam2base << " " << express2depthHomo << endl;
+		cv::Mat express2roboticHomo = rob.depth_Homo_cam2base * express2depthHomo;
+		cout << express2roboticHomo << endl;
+		cv::Mat express2roboticRotation, express2roboticTranslation;
+		rob.HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
+		if (express2roboticRotation.at<double>(0, 0) < 0)
 		{
-			x += vertices[j].x;
-			y += vertices[j].y;
+			express2roboticRotation.at<double>(2, 0) *= -1;
+			express2roboticRotation.at<double>(1, 0) *= -1;
+			express2roboticRotation.at<double>(0, 0) *= -1;
 		}
-		x /= 4, y /= 4;
+		if (express2roboticRotation.at<double>(2, 2) < 0)
+		{
+			express2roboticRotation.at<double>(2, 2) *= -1;
+			express2roboticRotation.at<double>(1, 2) *= -1;
+			express2roboticRotation.at<double>(0, 2) *= -1;
+		}
+		cv::Mat vector_y = express2roboticRotation.colRange(2, 3).cross(express2roboticRotation.colRange(0, 1)).reshape(0, 3);
+		//cout << vector_y << endl;
+		//cout << express2roboticRotation.col(1) << endl;
+		vector_y.copyTo(express2roboticRotation.col(1));
+		cv::Vec3f eulerAngles = rob.rotationMatrixToEulerAngles(express2roboticRotation);
+		cout << "----------------------pca---------------" << endl;
+		cout << express2roboticRotation << endl;
+		cout << "坐标为" << endl;
+		cout << express2roboticTranslation << endl;
+		cout << "欧拉角为" << endl;
+		cout << eulerAngles<< endl;
 
-		/*齐次坐标*/
-		cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
-		point2D.at<double>(2, 0) = 1;
-		cv::Mat point3D;
-		point2D.at<double>(0, 0) = x;
-		point2D.at<double>(1, 0) = y;
-		point2D.at<double>(2, 0) = 1;
+		////根据外接矩形，计算快递中心
+		//double x = 0, y = 0;
+		//for (int j = 0; j < 4; j++)
+		//{
+		//	x += vertices[j].x;
+		//	y += vertices[j].y;
+		//}
+		//x /= 4, y /= 4;
 
-		/*得到中心点的深度*/
-		double Zc = rob.getDepthValue(depthMat, y, x, 6);
+		///*齐次坐标*/
+		//cv::Mat point2D(3, 1, CV_64F, cv::Scalar(0));
+		//point2D.at<double>(2, 0) = 1;
+		//cv::Mat point3D;
+		//point2D.at<double>(0, 0) = x;
+		//point2D.at<double>(1, 0) = y;
+		//point2D.at<double>(2, 0) = 1;
 
-		//平面法向量
-		cv::Mat rotationMatrix = rob.calRotationMatrix(depthMat, vertices, 0.6);
-		cv::Vec3f eulerAngles = rob.rotationMatrixToEulerAngles(rotationMatrix);
+		///*得到中心点的深度*/
+		//double Zc = rob.getDepthValue(depthMat, y, x, 6);
 
-		cout << "最上方物体的旋转矩阵:" << endl;
-		cout << rotationMatrix << endl;
+		////平面法向量
+		//cv::Mat rotationMatrix = rob.calRotationMatrix(depthMat, vertices, 0.6);
+		//eulerAngles = rob.rotationMatrixToEulerAngles(rotationMatrix);
 
-		//得到中心点的3D坐标
-		point3D = rob.calPoint3D(depthMat, point2D);
+		////cout << "最上方物体的旋转矩阵:" << endl;
+		////cout << rotationMatrix << endl;
 
-		cout << "坐标:" << endl;
-		cout << point3D << endl;
-		cout << "欧拉角:" << endl;
-		cout << eulerAngles << endl;
+		////得到中心点的3D坐标
+		//point3D = rob.calPoint3D(depthMat, point2D);
+
+		//cout << "----------------------ori---------------" << endl;
+		//cout << rotationMatrix << endl;
+		//cout << "坐标:" << endl;
+		//cout << point3D << endl;
+		//cout << "欧拉角:" << endl;
+		//cout << eulerAngles << endl;
 
 		float coords[12];
-		coords[0] = point3D.at<double>(0, 0);
-		coords[1] = point3D.at<double>(1, 0);
-		coords[2] = point3D.at<double>(2, 0) - 4;
+		cout << express2roboticTranslation.at<double>(0, 0) << endl;
+		cout << express2roboticTranslation.at<double>(1, 0) << endl;
+		cout << express2roboticTranslation.at<double>(2, 0) << endl;
+		coords[0] = express2roboticTranslation.at<double>(0, 0);
+		coords[1] = express2roboticTranslation.at<double>(1, 0);
+		coords[2] = express2roboticTranslation.at<double>(2, 0) - 4;
 		coords[3] = eulerAngles[0];
 		coords[4] = eulerAngles[1];
 		coords[5] = eulerAngles[2];
@@ -146,6 +188,7 @@ int main()
 		coords[10] = 0;
 		coords[11] = 0;
 
+		kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
 		if (useRobot)
 			sr->moveRobot(coords);
 	}

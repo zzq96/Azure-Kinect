@@ -4,7 +4,6 @@ Robot::Robot(const std::string& Homo_cam2base_file, k4a::KinectAPI *kinect, bool
 {
 	this->kinect = kinect;
 	cv::FileStorage fs2(Homo_cam2base_file, cv::FileStorage::READ); //读取相机与基座的转化关系XML文件  
-	cv::Mat color_Homo_cam2base, depth_Homo_cam2base;
 	fs2["color_Homo_cam2base"] >> color_Homo_cam2base;
 	fs2["depth_Homo_cam2base"] >> depth_Homo_cam2base;
 	if (verbose)

@@ -10,6 +10,7 @@ public:
 	cv::Mat depth_R_base2cam, depth_t_base2cam;
 	cv::Mat color_R_cam2base, color_t_cam2base;
 	cv::Mat depth_R_cam2base, depth_t_cam2base;
+	cv::Mat color_Homo_cam2base, depth_Homo_cam2base;
 	Robot(const std::string& Homo_cam2base_file, k4a::KinectAPI *kinect, bool verbose);
 	const double PI = 3.1415926;
 	// Checks if a matrix is a valid rotation matrix.
