@@ -1,14 +1,17 @@
 #pragma once
-#include <winsock2.h>
-#include <cassert>
-#define PORT_NUM 10030
+#include <windows.h>
+#include <iostream>
+#include <OpenNR-IF.h>
 
-//Ready for rewrite
 class SocketRobot {
 private:
-	SOCKET acceptSock;
+	int nXmlOpenId;
 public:
 	SocketRobot();
-	void moveRobot(float* coords);
-	void close();
+	void moveRobotToAndFro(float* coords);
+	void moveRobotTo(float* coords, bool startOrEnd);
+	void waitForRobot(float* coords);
+	void vaccum(bool startOrEnd);
+	void startVaccum();
+	void endVaccum();
 };

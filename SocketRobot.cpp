@@ -1,102 +1,104 @@
-#include <stdio.h>
-#include <iostream>
-#include <string.h>
-#include <string>
 #include "SocketRobot.h"
-
-
-#define SEND_DATA_SIZE 8
-#define SEND_BUFFER_LEN (SEND_DATA_SIZE * 12)
-#define REC_DATA_SIZE 12
-#define REC_BUFFER_LEN (REC_DATA_SIZE * 6)
-
+#define IP_ADDRESS "192.168.1.2"
+#define NUM_OF_AXES (6)
 using namespace std;
 
+bool floatCmp(float a, float b) {
+    if (abs(a - b) <= 1) return true;
+    else return false;
+}
+
 SocketRobot::SocketRobot() {
-    //Socket Setup
-    struct sockaddr_in addr;
-    struct sockaddr_in client;
-    addr.sin_port = htons(PORT_NUM);
-    addr.sin_family = AF_INET;
-    addr.sin_addr.S_un.S_addr = INADDR_ANY;
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0) {
-        cout << "WSASetup failed!!!" << endl;
-        assert(0);
-    }
-    SOCKET listenSock = socket(AF_INET, SOCK_STREAM, 0);
-    if (listenSock == INVALID_SOCKET) {
-        cout << "Socket: " << WSAGetLastError() << endl;
-        assert(0);
-    }
-    if (bind(listenSock, (struct sockaddr*) & addr, sizeof(addr)) != 0) {
-        cout << "Bind: " << WSAGetLastError() << endl;
-        assert(0);
-    }
-    if (listen(listenSock, 5) != 0) {
-        cout << "Listen: " << WSAGetLastError() << endl;
-        assert(0);
-    }
-    int len = sizeof(client);
-    cout << "Waiting for connection ..." << endl;
-    this->acceptSock = accept(listenSock, (struct sockaddr*) & client, &len);
-    if (this->acceptSock == INVALID_SOCKET) {
-        cout << "Accept: " << WSAGetLastError() << endl;
-        assert(0);
-    }
-    char receive_buf[1024] = {};
-    recv(this->acceptSock, receive_buf, sizeof(receive_buf), 0);
-    cout << receive_buf << endl;
-    memset(receive_buf, 0, sizeof(receive_buf));
-    recv(this->acceptSock, receive_buf, sizeof(receive_buf), 0);
-    cout << receive_buf << endl;
+    NACHI_COMMIF_INFO Info;
+    ZeroMemory(&Info, sizeof(Info));
+    char tmp[] = "192.168.1.2";
+    Info.pcAddrs = tmp;
+    Info.lKind = NR_DATA_XML;
+    nXmlOpenId = NR_Open(&Info);
+    printf("Robot connection: %d", nXmlOpenId);
 }
-void SocketRobot::moveRobot(float* coords) {
-    //Receive "connected" from Client
-    int check = 0;
-    char receive_buf[REC_BUFFER_LEN] = {};
 
-    memset(receive_buf, 0, sizeof(receive_buf));
-    char startX[] = "00000.00";
-    sprintf_s(startX, "%08.2f", coords[0]);
-    char startY[] = "00000.00";
-    sprintf_s(startY, "%08.2f", coords[1]);
-    char startZ[] = "00000.00";
-    sprintf_s(startZ, "%08.2f", coords[2]);
-    char startRoll[] = "00000.00";
-    sprintf_s(startRoll, "%08.2f", coords[3]);
-    char startPitch[] = "00000.00";
-    sprintf_s(startPitch, "%08.2f", coords[4]);
-    char startYaw[] = "00000.00";
-    sprintf_s(startYaw, "%08.2f", coords[5]);
-    char endX[] = "00000.00";
-    sprintf_s(endX, "%08.2f", coords[6]);
-    char endY[] = "00000.00";
-    sprintf_s(endY, "%08.2f", coords[7]);
-    char endZ[] = "00000.00";
-    sprintf_s(endZ, "%08.2f", coords[8]);
-    char endRoll[] = "00000.00";
-    sprintf_s(endRoll, "%08.2f", coords[9]);
-    char endPitch[] = "00000.00";
-    sprintf_s(endPitch, "%08.2f", coords[10]);
-    char endYaw[] = "00000.00";
-    sprintf_s(endYaw, "%08.2f", coords[11]);
-    char buf[SEND_BUFFER_LEN + 1];
-    sprintf_s(buf, "%s%s%s%s%s%s%s%s%s%s%s%s", startX, startY, startZ, startRoll, startPitch, startYaw,
-        endX, endY, endZ, endRoll, endPitch, endYaw);
-    check = send(this->acceptSock, buf, sizeof(buf) - 1, 0);
+void SocketRobot::moveRobotToAndFro(float* coords) {
+    if (this->nXmlOpenId <= 0) {
+        printf("Robot connection error!");
+        return;
+    }
+
+    moveRobotTo(coords, true);
+    //startVaccum();    
     
-    check = recv(this->acceptSock, receive_buf, sizeof(receive_buf), 0);
-    cout << receive_buf << endl;
-
-    memset(receive_buf, 0, sizeof(receive_buf));
-    check = recv(this->acceptSock, receive_buf, sizeof(receive_buf), 0);
-    cout << receive_buf << endl;
+    moveRobotTo(coords + 6, false);
+    //endVaccum();
 }
 
-void SocketRobot::close() {
-    float end[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    moveRobot(end);
-    closesocket(this->acceptSock);
-    WSACleanup();
+void SocketRobot::moveRobotTo(float* coords, bool startOrEnd) {
+    NR_POSE PoseMid = { coords[0], coords[1], coords[2] + 250.0f, coords[3], coords[4], coords[5] };
+    NR_POSE PoseEnd = { coords[0], coords[1], coords[2], coords[3], coords[4], coords[5] };
+    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseMid, 0, 1, 0) != NR_E_NORMAL) {
+        printf("NR_CtrlMoveX error : %d\n", nErr);
+        return;
+    }
+    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseEnd, 2, 1, 0) != NR_E_NORMAL) {
+        printf("NR_CtrlMoveX error : %d\n", nErr);
+        return;
+    }
+    waitForRobot(coords);
+
+    vaccum(startOrEnd);
+
+    NR_POSE Pose = { 0.0f, 0.0f, 250.0f, 0.0f, 0.0f, 0.0f };
+    if (int nErr = NR_CtrlMoveXR(this->nXmlOpenId, &Pose, 0, 1, 0) != NR_E_NORMAL) {
+        printf("NR_CtrlMoveX error : %d\n", nErr);
+        return;
+    }
+}
+
+void SocketRobot::waitForRobot(float* coords) {
+    Sleep(200);
+    while (1) {
+        float fValue[6];
+        ZeroMemory(&fValue, sizeof(fValue));
+        if (int nErr = NR_AcsToolTipPos(nXmlOpenId, fValue, 1, 6) == NR_E_NORMAL) {
+            if (floatCmp(fValue[0], coords[0])
+                && floatCmp(fValue[1], coords[1])
+                && floatCmp(fValue[2], coords[2])
+                && floatCmp(fValue[3], coords[3])
+                && floatCmp(fValue[4], coords[4])
+                && floatCmp(fValue[5], coords[5])
+                ) {
+                break;
+            }
+        }
+    }
+    Sleep(100);
+}
+
+void SocketRobot::vaccum(bool startOrEnd) {
+    BOOL bValue[1];
+    bValue[0] = startOrEnd;
+    if (int nErr = NR_AcsGeneralOutputSignal(nXmlOpenId, bValue, TRUE, 1, 1) != NR_E_NORMAL) {
+        printf("NR_AcsGeneralOutputSignal reading error : %d\n", nErr);
+        return;
+    }
+    Sleep(500);
+}
+
+void SocketRobot::startVaccum() {
+    BOOL bValue[1];
+    bValue[0] = TRUE;
+    if (int nErr = NR_AcsGeneralOutputSignal(nXmlOpenId, bValue, TRUE, 1, 1) != NR_E_NORMAL) {
+        printf("NR_AcsGeneralOutputSignal reading error : %d\n", nErr);
+        return;
+    }
+    Sleep(500);
+}
+
+void SocketRobot::endVaccum() {
+    BOOL bValue[1];
+    bValue[0] = false;
+    if (int nErr = NR_AcsGeneralOutputSignal(nXmlOpenId, bValue, TRUE, 1, 1) != NR_E_NORMAL) {
+        printf("NR_AcsGeneralOutputSignal reading error : %d\n", nErr);
+        return;
+    }
+    Sleep(500);
 }

@@ -34,7 +34,7 @@ cv::Mat depthMat, colorMat, depthcolorMat, irMat, ircolorMat;
 cv::Mat depthMatRevise;
 int main()
 {
-	bool useRobot = false;
+	bool useRobot = true;
 #ifdef ROBOT
 	useRobot = true;
 #endif // ROBOT
@@ -191,7 +191,7 @@ int main()
 
 		kinect.ShowOpenCVImage(colorMatRevise, "depthcolor", useRobot);
 		if (useRobot)
-			sr->moveRobot(coords);
+			sr->moveRobotToAndFro(coords);
 	}
 	return 0;
 }
