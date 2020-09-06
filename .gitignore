@@ -12,7 +12,6 @@ imgs/
 *.user
 *.userosscache
 *.sln.docstates
-Azure Kinect.vcxproj
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
