@@ -80,8 +80,8 @@
     <LibraryPath>D:\SoftWare\Azure Kinect Body Tracking SDK\sdk\windows-desktop\amd64\release\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>D:\SoftWare\Azure Kinect Body Tracking SDK\sdk\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\SoftWare\Azure Kinect Body Tracking SDK\sdk\windows-desktop\amd64\release\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Software\opencv\build\include;D:\Code\c++\Azure Kinect\curl\include;D:\Code\c++\Azure Kinect\include\peac;D:\SoftWare\PCL\3rdParty\Eigen\eigen3;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Software\opencv\build\x86\vc16\lib;D:\Code\c++\Azure Kinect\curl\build\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>D:\SoftWare\PCL\3rdParty\OpenNI2\Include;D:\SoftWare\PCL\include\pcl-1.9;D:\SoftWare\PCL\3rdParty\VTK\include\vtk-8.1;D:\SoftWare\PCL\3rdParty\QHull\include;D:\SoftWare\PCL\3rdParty\FLANN\include;D:\SoftWare\PCL\3rdParty\Eigen\eigen3;D:\SoftWare\PCL\3rdParty\Boost\include\boost-1_68;$(IncludePath)</IncludePath>
@@ -128,12 +128,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;BOOST_USE_WINDOWS_H;NOMINMAX;VTK_VISUALIZATION;_SILENCE_FPOS_SEEKPOS_DEPRECATION_WARNING;BUILDING_LIBCURL;HTTP_ONLY;ROBO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>k4abt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world411.lib;opencv_world411d.lib;ws2_32.lib;libcurld.lib;winmm.lib;wldap32.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
