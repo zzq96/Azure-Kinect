@@ -14,7 +14,7 @@ imgs/
 *.sln.docstates
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-
+Azure Kinect.vcxproj
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
