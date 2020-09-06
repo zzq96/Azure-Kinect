@@ -12,6 +12,7 @@
 #include"SocketRobot.h"
 #include "flask.h"
 #include "Robot.h"
+#include <OpenNR-IF.h>
 
 
 //相机内参畸变系数所在文件

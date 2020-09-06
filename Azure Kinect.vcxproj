@@ -129,12 +129,14 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;BOOST_USE_WINDOWS_H;NOMINMAX;VTK_VISUALIZATION;_SILENCE_FPOS_SEEKPOS_DEPRECATION_WARNING;BUILDING_LIBCURL;HTTP_ONLY;ROBO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Nachi\OpenNR-IF;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>opencv_world411.lib;opencv_world411d.lib;ws2_32.lib;libcurld.lib;winmm.lib;wldap32.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_world411.lib;opencv_world411d.lib;ws2_32.lib;libcurld.lib;winmm.lib;wldap32.lib;Crypt32.lib;OpenNR-IF.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Nachi\OpenNR-IF;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
