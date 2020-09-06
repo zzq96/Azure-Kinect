@@ -3,6 +3,7 @@
 #include <cassert>
 #define PORT_NUM 10030
 
+//Ready for rewrite
 class SocketRobot {
 private:
 	SOCKET acceptSock;
