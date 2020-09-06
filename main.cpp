@@ -15,6 +15,7 @@
 #include <OpenNR-IF.h>
 
 
+//test
 //相机内参畸变系数所在文件
 string caliberation_camera_file = "caliberation_camera.xml";
 //外参所在文件
