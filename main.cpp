@@ -67,7 +67,10 @@ int main()
 		vector<cv::Mat> masks;
 
 		//把rgb图传给服务器并返回结果
+		double t = (double)cv::getTickCount();
 		getMasks(colorMatRevise, masks);
+		t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+		cout << "服务器部分用时： " << t << "秒" << endl;
 
 		cout << "有" << masks.size() << "个快递" << endl;
 
