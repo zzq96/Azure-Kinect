@@ -70,14 +70,10 @@ void SocketRobot::moveRobotTo(float* coords, bool startOrEnd) {
     mu.unlock();
     vaccum(startOrEnd);
 
-    if (startOrEnd) {
-        if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAbove, 1, 1, 0) != NR_E_NORMAL) {
-            printf("NR_CtrlMoveX error : %d\n", nErr);
-            return;
-        }
-        float tmp[] = { coords[0], coords[1], coords[2] + 250.0f, coords[3], coords[4], coords[5] };
-        waitForRobot(tmp);
-    }    
+    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAbove, 0, 1, 0) != NR_E_NORMAL) {
+        printf("NR_CtrlMoveX error : %d\n", nErr);
+        return;
+    }  
 }
 
 void SocketRobot::waitForRobot(float* coords) {
