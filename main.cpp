@@ -14,6 +14,7 @@
 #include "Robot.h"
 #include <OpenNR-IF.h>
 
+//test no ff
 
 //相机内参畸变系数所在文件
 string caliberation_camera_file = "caliberation_camera.xml";
