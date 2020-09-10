@@ -54,7 +54,7 @@ int main()
 
 		///*根据我们文件提供的内参和畸变系数校正图像*/
 		kinect.undistort(depthMatOld, depthMat, "depth");
-		kinect.undistort(depthcolorMatOld, depthcolorMat, "depth");
+		//kinect.undistort(depthcolorMatOld, depthcolorMat, "depth");
 		kinect.undistort(colorMatOld, colorMat, "color");
 
 		//根据我们文件提供的外参将color图转化到深度图视角
@@ -80,8 +80,8 @@ int main()
 
 		//保存图片，用于出问题debug
 		string name = "Data/imgs/img" + std::to_string(cnt);
-		cv::imwrite(name + "_depth.png", depthMat);
-		cv::imwrite(name + "_depthcolor.png", colorMatRevise);
+		//cv::imwrite(name + "_depth.png", depthMat);
+		//cv::imwrite(name + "_depthcolor.png", colorMatRevise);
 
 		//如果没快递就休眠1秒
 		if (highestPlanePoints_3D.size() == 0)
@@ -177,16 +177,16 @@ int main()
 		coords[5] = eulerAngles[2];
 		coords[6] = 698 + 50;
 		//放成一排
-		//coords[7] = 342 - 750 + cnt * 220;
+		coords[7] = 342 - 750 + cnt * 210;
 		//放到固定位置
-		coords[7] = 0;
+		//coords[7] = 0;
 		//快递计数
 		cnt++;
 		//放置的高度
 		if (coords[2] > 160)
-			coords[8] = 160 - 50;
+			coords[8] = 160 - 30;
 		else
-			coords[8] = coords[2] - 50;
+			coords[8] = coords[2] - 30;
 
 		//平着放
 		coords[9] = 0;

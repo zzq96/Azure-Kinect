@@ -103,5 +103,6 @@ void SocketRobot::vaccum(bool startOrEnd) {
         printf("NR_AcsGeneralOutputSignal reading error : %d\n", nErr);
         return;
     }
-    Sleep(200);
+    if (startOrEnd) Sleep(200);
+    else Sleep(600);
 }
