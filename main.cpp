@@ -48,7 +48,7 @@ int main()
 	int cnt = 0;
 	while (true)
 	{
-		if (!sr->getMotionFinished()) continue;
+		if (useRobot && !sr->getMotionFinished()) continue;
 		cout << "starting new cycle" << endl;
 		//得到原始的各图片，并且不用相机内置的参数校正图片
 		kinect.GetOpenCVImage(colorMatOld, depthMatOld, depthcolorMatOld, irMat, FALSE);
