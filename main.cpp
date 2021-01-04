@@ -380,7 +380,7 @@ void DeleteBadObejct(Object *ObjectRes, int &iObj_num)
 //把中心点涂黑，方便找到桌面上的（0,0）点
 //测试GetXYZAtCameraView函数
 k4a::KinectAPI kinect;
-int main5()
+int main()
 {
 	
 	string caliberation_camera_file = "caliberation_camera.xml";
@@ -494,12 +494,13 @@ int main5()
 				else { continue; }
 				std::string name;
 				if(real_cnt < 10)
-					name = "imgs/img0" + std::to_string(real_cnt);
+					name = "Data/imgs/img0" + std::to_string(real_cnt);
 				else 
-					name = "imgs/img" + std::to_string(real_cnt);
+					name = "Data/imgs/img" + std::to_string(real_cnt);
 				cv::imwrite(name + "_depth.png", depthMat);
 				cv::imwrite(name + "_depthcolor.png", depthcolorMat);
 				cv::imwrite(name + "_color.png", colorMatRevise);
+				cv::imwrite(name + "_ir.png", irMat);
 				real_cnt++;
 				printf("第%d张图片保存成功，按任意键继续拍照\n", real_cnt);
 				system("pause");
@@ -548,7 +549,7 @@ int main5()
 	}
     return 0;
 }
-int main()
+int main5()
 {
 	
 	try {
@@ -559,7 +560,7 @@ int main()
 		{
 			printf("第%d张图片\n", real_cnt);
 			cv::Mat depthMat, colorMat, depthcolorMat ,irMat, ircolorMat;
-			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, true);
+			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, FALSE);
 			//cv::Mat irMat_ = irMat.clone();
 
 			//for(int x = 0; x < irMat.rows; x ++)
