@@ -553,13 +553,13 @@ int main()
 	
 	try {
 		//opencvÍ¼Ïñ
-		int img_cnt = 100;
+		int img_cnt = 500;
 		int real_cnt = 0;
 		for(int i = 0; i < img_cnt; i++)
 		{
 			printf("µÚ%dÕÅÍ¼Æ¬\n", real_cnt);
 			cv::Mat depthMat, colorMat, depthcolorMat ,irMat, ircolorMat;
-			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, false);
+			kinect.GetOpenCVImage(colorMat, depthMat, depthcolorMat, irMat, true);
 			//cv::Mat irMat_ = irMat.clone();
 
 			//for(int x = 0; x < irMat.rows; x ++)
