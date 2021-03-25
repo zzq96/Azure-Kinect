@@ -24,16 +24,16 @@
     <ClCompile Include="k4a_grabber.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SocketRobot.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="plane_detection.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="flask.cpp">
+    <ClCompile Include="Robot.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Robot.cpp">
+    <ClCompile Include="SocketRobot.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="flask.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,16 +41,16 @@
     <ClInclude Include="k4a_grabber.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="SocketRobot.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="plane_detection.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="flask.h">
+    <ClInclude Include="Robot.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Robot.h">
+    <ClInclude Include="SocketRobot.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="flask.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

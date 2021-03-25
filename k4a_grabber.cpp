@@ -290,7 +290,10 @@ void k4a::KinectAPI::GetOpenCVImage(cv::Mat& colorMat, cv::Mat& depthMat, cv::Ma
 		}
 		else throw "transform depth image failed!";
 	}
-	else depthImage = depthImageOld;
+	else {
+		k4a_image_release(depthImage);
+		depthImage = depthImageOld;//”–Œ Ã‚
+	}
 	k4a_image_t irImage = k4a_capture_get_ir_image(capture);
 
 	if (colorImage != NULL)
