@@ -76,6 +76,7 @@ int main()
 
 		cout << "有" << masks.size() << "个快递" << endl;
 
+		//得到高度最高的快递的3个轴方向
 		double* x_axis, * y_axis, * z_axis;
 		colorMatRevise = processImg(colorMatRevise, depthMat, masks, center, x_axis, y_axis, z_axis, highestPlanePoints_3D, vertices);
 
@@ -90,7 +91,7 @@ int main()
 			Sleep(1000);
 			continue;
 		}
-		//pca
+		//最高的快递的中心点坐标和特征向量(就是3个主轴)
 		cv::Mat centerMat = (cv::Mat_<double>(3, 1) << center[0], center[1], center[2]);
 		cv::Mat eigenvectors = (cv::Mat_<double>(3, 3)<< x_axis[0], y_axis[0], z_axis[0],
 			x_axis[1], y_axis[1], z_axis[1], 
@@ -99,12 +100,16 @@ int main()
 		//cout << eigenvectors << endl;
 
 		//cout << centerMat << endl;
+		//中心点坐标和3个主轴就是相机和快递之间的平移向量和旋转矩阵, 将它们拼接为快递到深度相机的单应矩阵
 		cv::Mat express2depthHomo = rob.RT2HomogeneousMatrix(eigenvectors, centerMat);
 		//cout << rob.depth_Homo_cam2base << " " << express2depthHomo << endl;
+		//根据公式转化为快递到机械臂坐标系的单应矩阵
 		cv::Mat express2roboticHomo = rob.depth_Homo_cam2base * express2depthHomo;
 		//cout << express2roboticHomo << endl;
+		//快递到机械臂坐标系的单应矩阵, 拆成平移向量和旋转矩阵
 		cv::Mat express2roboticRotation, express2roboticTranslation;
 		rob.HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
+		//下面这一坨我也忘了干啥的, 大概是转一下快递3个轴的方向,,使得和机械臂差不多...
 		if (express2roboticRotation.at<double>(0, 0) < 0)
 		{
 			express2roboticRotation.at<double>(2, 0) *= -1;
@@ -121,8 +126,8 @@ int main()
 		//cout << vector_y << endl;
 		//cout << express2roboticRotation.col(1) << endl;
 		vector_y.copyTo(express2roboticRotation.col(1));
+		//旋转矩阵转欧拉角
 		cv::Vec3f eulerAngles = rob.rotationMatrixToEulerAngles(express2roboticRotation);
-		cout << "----------------------pca---------------" << endl;
 		cout << express2roboticRotation << endl;
 		cout << "坐标为" << endl;
 		cout << express2roboticTranslation << endl;
@@ -170,6 +175,7 @@ int main()
 		cout << express2roboticTranslation.at<double>(0, 0) << endl;
 		cout << express2roboticTranslation.at<double>(1, 0) << endl;
 		cout << express2roboticTranslation.at<double>(2, 0) << endl;
+		//将计算好的快递坐标和姿态传给机械臂
 		coords[0] = express2roboticTranslation.at<double>(0, 0);
 		coords[1] = express2roboticTranslation.at<double>(1, 0);
 		coords[2] = express2roboticTranslation.at<double>(2, 0) - 4;

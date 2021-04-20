@@ -41,6 +41,9 @@
     <ClInclude Include="k4a_grabber.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ConComponent.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="plane_detection.h">
       <Filter>头文件</Filter>
     </ClInclude>
