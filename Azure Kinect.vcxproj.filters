@@ -53,5 +53,8 @@
     <ClInclude Include="flask.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ConComponent.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
