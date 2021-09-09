@@ -24,4 +24,5 @@
 using namespace std;
 using namespace rapidjson;
 
+//发送图片到深度学习服务器, 并接收结果
 void getMasks(cv::Mat& mat, vector<cv::Mat> & masks);

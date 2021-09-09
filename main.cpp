@@ -50,7 +50,7 @@ int main()
 	{
 		if (useRobot && !sr->getMotionFinished()) continue;
 		cout << "starting new cycle" << endl;
-		//得到原始的各图片，并且不用相机内置的参数校正图片
+		//得到原始的rgb和深度图片，并且不用相机内置的参数校正图片, depthcolorMatOld可以不用管
 		kinect.GetOpenCVImage(colorMatOld, depthMatOld, depthcolorMatOld, irMat, FALSE);
 
 		///*根据我们文件提供的内参和畸变系数校正图像*/
@@ -76,6 +76,7 @@ int main()
 
 		cout << "有" << masks.size() << "个快递" << endl;
 
+		//平面检测
 		double* x_axis, * y_axis, * z_axis;
 		colorMatRevise = processImg(colorMatRevise, depthMat, masks, center, x_axis, y_axis, z_axis, highestPlanePoints_3D, vertices);
 
@@ -90,7 +91,7 @@ int main()
 			Sleep(1000);
 			continue;
 		}
-		//pca
+		//最高物体的中心坐标和3个轴方向
 		cv::Mat centerMat = (cv::Mat_<double>(3, 1) << center[0], center[1], center[2]);
 		cv::Mat eigenvectors = (cv::Mat_<double>(3, 3)<< x_axis[0], y_axis[0], z_axis[0],
 			x_axis[1], y_axis[1], z_axis[1], 
@@ -99,12 +100,16 @@ int main()
 		//cout << eigenvectors << endl;
 
 		//cout << centerMat << endl;
+		//将旋转矩阵和平移向量合成为单应矩阵, 这个是深度相机视角下快递的姿态
 		cv::Mat express2depthHomo = rob.RT2HomogeneousMatrix(eigenvectors, centerMat);
 		//cout << rob.depth_Homo_cam2base << " " << express2depthHomo << endl;
+		//这个是机械臂视角下快递的姿态
 		cv::Mat express2roboticHomo = rob.depth_Homo_cam2base * express2depthHomo;
 		//cout << express2roboticHomo << endl;
 		cv::Mat express2roboticRotation, express2roboticTranslation;
+		//分解单应矩阵为旋转矩阵和平移向量
 		rob.HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
+		//矫正方向
 		if (express2roboticRotation.at<double>(0, 0) < 0)
 		{
 			express2roboticRotation.at<double>(2, 0) *= -1;
@@ -121,6 +126,7 @@ int main()
 		//cout << vector_y << endl;
 		//cout << express2roboticRotation.col(1) << endl;
 		vector_y.copyTo(express2roboticRotation.col(1));
+		//将旋转矩阵转化为欧拉角
 		cv::Vec3f eulerAngles = rob.rotationMatrixToEulerAngles(express2roboticRotation);
 		cout << "----------------------pca---------------" << endl;
 		cout << express2roboticRotation << endl;
@@ -166,6 +172,7 @@ int main()
 		//cout << "欧拉角:" << endl;
 		//cout << eulerAngles << endl;
 
+		//构建一个机械臂api接收的数据格式, 前6个数据是快递的姿态, 后6个数据是抓到哪
 		float coords[12];
 		cout << express2roboticTranslation.at<double>(0, 0) << endl;
 		cout << express2roboticTranslation.at<double>(1, 0) << endl;
