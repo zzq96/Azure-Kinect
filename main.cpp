@@ -100,14 +100,14 @@ int main()
 		//cout << eigenvectors << endl;
 
 		//cout << centerMat << endl;
-		//将旋转矩阵和平移向量合成为单应矩阵, 这个是深度相机视角下快递的姿态
+		//将旋转矩阵和平移向量合成为齐次矩阵, 这个是深度相机视角下快递的姿态
 		cv::Mat express2depthHomo = rob.RT2HomogeneousMatrix(eigenvectors, centerMat);
 		//cout << rob.depth_Homo_cam2base << " " << express2depthHomo << endl;
 		//这个是机械臂视角下快递的姿态
 		cv::Mat express2roboticHomo = rob.depth_Homo_cam2base * express2depthHomo;
 		//cout << express2roboticHomo << endl;
 		cv::Mat express2roboticRotation, express2roboticTranslation;
-		//分解单应矩阵为旋转矩阵和平移向量
+		//分解齐次矩阵为旋转矩阵和平移向量
 		rob.HomogeneousMtr2RT(express2roboticHomo, express2roboticRotation, express2roboticTranslation);
 		//矫正方向
 		if (express2roboticRotation.at<double>(0, 0) < 0)

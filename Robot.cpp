@@ -13,7 +13,7 @@ Robot::Robot(const std::string& Homo_cam2base_file, k4a::KinectAPI *kinect, bool
 	}
 	cv::Mat depth_Homo_base2cam = depth_Homo_cam2base.inv();
 	fs2.release();
-	/*将单应矩阵转化为旋转矩阵和平移向量方便接下来运算*/
+	/*将齐次矩阵转化为旋转矩阵和平移向量方便接下来运算*/
 	HomogeneousMtr2RT(depth_Homo_base2cam, depth_R_base2cam, depth_t_base2cam);
 }
 bool Robot::isRotationMatrix(cv::Mat& R)
@@ -88,7 +88,7 @@ double Robot::getDistance(cv::Point3f a, cv::Point3f b)
 	double  d = sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 	return d;
 }
-//单应矩阵转化为旋转矩阵和平移向量
+//齐次矩阵转化为旋转矩阵和平移向量
 void Robot::HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 {
 	//Mat R_HomoMtr = HomoMtr(Rect(0, 0, 3, 3)); //注意Rect取值
@@ -104,7 +104,7 @@ void Robot::HomogeneousMtr2RT(cv::Mat& HomoMtr, cv::Mat& R, cv::Mat& T)
 
 }
 
-//旋转矩阵和平移向量转化为单应矩阵
+//旋转矩阵和平移向量转化为齐次矩阵
 cv::Mat Robot::RT2HomogeneousMatrix(const cv::Mat& R, const cv::Mat& T)
 {
 	cv::Mat HomoMtr;
