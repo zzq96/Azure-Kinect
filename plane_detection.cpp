@@ -1,19 +1,15 @@
 #include "plane_detection.h"
+#include "Robot.h"
 #include <stdint.h>
 #include <iomanip> // output double value precision
-cv::Mat depth_Homo_cam2base	 =(cv::Mat_<double>(4,4)<<2.1717400918944269e-02, 9.9163976363198392e-01, 1.2719643737632352e-01,
-    2.9420400367679542e+02, 9.9974014635825281e-01,
-    -2.2422007434261534e-02, 4.1101511160483439e-03,
-    3.5015016682124605e+02, 6.9277887456734161e-03,
-	1.2707412311922936e-01, -9.9186903015296057e-01,
-	1.3214478208789160e+03, 0., 0., 0. ,1.);
+extern  Robot rob;
 
 cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, double*& center, 
 	double*& x_axis, double*& y_axis, double*& z_axis, vector<VertexType>& highestPlanePoints, cv::Point2f* vertices) {
-	int start_x = 240;
-	int start_y = 0;
-	int roi_width = 280;
-	int roi_height = 360;
+	int start_x = 200;
+	int start_y = 40;
+	int roi_width = 215;
+	int roi_height = 290;
 	cv::Rect roi = cv::Rect(start_x, start_y, roi_width, roi_height);
 	cv::Mat mask = cv::Mat::zeros(kDepthHeight, kDepthWidth, CV_8UC1);
 	mask(roi).setTo(255);
@@ -37,7 +33,7 @@ cv::Mat processImg(cv::Mat colorSrc, cv::Mat depthSrc, vector<cv::Mat>& masks, d
 				plane_detections[i].plane_filter.extractedPlanes[j]->center[1],
 				plane_detections[i].plane_filter.extractedPlanes[j]->center[2],1);
 			//将深度相机坐标系下的坐标转化为机械臂坐标系
-			point3d = depth_Homo_cam2base * point3d;
+			point3d = rob.depth_Homo_cam2base * point3d;
 			//选出最高的快递
 			if (point3d.at<double>(2, 0) > highestPlaneHeight) {
 				highestPlaneHeight = point3d.at<double>(2, 0);
