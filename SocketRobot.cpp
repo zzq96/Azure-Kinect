@@ -45,8 +45,8 @@ double* SocketRobot::getPose() {
     return xyz;
 }
 
-void SocketRobot::doMove(double* coords, Vzense* heightEstimator) {
-    thread t1(&SocketRobot::moveRobotToAndFro, this, coords, heightEstimator);
+void SocketRobot::doMove(double* coords) {
+    thread t1(&SocketRobot::moveRobotToAndFro, this, coords);
     t1.detach();
 }
 
@@ -58,7 +58,7 @@ void SocketRobot::moveRobotMid(float* angles, int type) {
     }
 }
 
-void SocketRobot::moveRobotToAndFro(double* coords, Vzense* heightEstimator) {
+void SocketRobot::moveRobotToAndFro(double* coords) {
     int nValue = 0;
     if (int nErr = NR_AcsInterpolationKind(nXmlOpenId, &nValue, TRUE) != NR_E_NORMAL) {
         printf("Interpolation setting gone wrong!");
@@ -142,7 +142,8 @@ void SocketRobot::moveRobotTo(double* coords, bool startOrEnd) {
     mu.unlock();
     if(!startOrEnd) vaccum(startOrEnd);
 
-    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAbove, 0, 1, 0) != NR_E_NORMAL) {
+    NR_POSE PoseAboveSecond = { coords[0], coords[1], coords[2] + 300.0f, 0.0f, 0.0f, 0.0f };
+    if (int nErr = NR_CtrlMoveX(this->nXmlOpenId, &PoseAboveSecond, 0, 1, 0) != NR_E_NORMAL) {
         printf("NR_CtrlMoveX error : %d\n", nErr);
         return;
     }

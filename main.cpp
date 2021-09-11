@@ -13,7 +13,6 @@
 #include "flask.h"
 #include "Robot.h"
 #include <OpenNR-IF.h>
-#include "vzense.h"
 
 //test no ff
 
@@ -42,7 +41,6 @@ int main()
 #endif // ROBOT
 
 	SocketRobot* sr = NULL;
-	Vzense* heightEstimator = new Vzense();
 	//heightEstimator->frameLoop();
 	if (useRobot)
 		sr = new SocketRobot();
@@ -204,7 +202,7 @@ int main()
 			double goal[] = { coords[6], coords[7], coords[8] + 100 };
 			//sr->runPlanner(depthMat, start, goal, 2, rob.depth_Homo_cam2base);
 			sr->setMotionFinished(false);
-			sr->doMove(coords, heightEstimator);
+			sr->doMove(coords);
 		}
 
 	}
