@@ -6,7 +6,6 @@
 #include <mutex>
 #include <ctime>
 #include "Robot.h"
-#include "vzense.h"
 
 extern Robot rob;
 
@@ -28,12 +27,12 @@ public:
 	SocketRobot();
 	~SocketRobot() {};
 	double* getPose();
-	void doMove(double* coords, Vzense* heightEstimator);
+	void doMove(double* coords);
 	void setMotionFinished(bool finished) { motionFinished = finished; }
 	bool getMotionFinished() { return motionFinished; }
 	void moveRobotMid(float* coords, int type);
 	void moveRobotMid();
-	void moveRobotToAndFro(double* coords, Vzense* heightEstimator);
+	void moveRobotToAndFro(double* coords);
 	void moveRobotTo(double* coords, bool startOrEnd);
 	void waitForRobot(double* coords, double thresh);
 	void vaccum(bool startOrEnd);
